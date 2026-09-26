@@ -2,6 +2,7 @@ import { isConfigured } from "./config.js";
 import { supabase } from "./supabase.js";
 import { startRouter } from "./router.js";
 import { toast } from "./ui.js";
+import { startUpdateCheck } from "./update.js";
 
 const authScreen = document.getElementById("auth-screen");
 const app = document.getElementById("app");
@@ -65,3 +66,4 @@ if ("serviceWorker" in navigator) {
 }
 
 init();
+startUpdateCheck();

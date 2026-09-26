@@ -40,9 +40,14 @@ export function startRouter() {
 }
 
 async function guarded(go) {
-  if (leaveGuard && !(await leaveGuard())) return;
+  if (await confirmLeave()) go();
+}
+
+// 離開目前頁面前確認（編輯中未儲存會詢問）；線上更新重新載入前也會用到
+export async function confirmLeave() {
+  if (leaveGuard && !(await leaveGuard())) return false;
   leaveGuard = null;
-  go();
+  return true;
 }
 
 async function handleRoute() {
@@ -82,6 +87,8 @@ async function handleRoute() {
     await route.render(container, ctx);
   } catch (err) {
     console.error(err);
-    if (alive()) container.replaceChildren(h("div", { class: "empty" }, `發生錯誤：${err.message || err}`));
+    // PGRST116：用 .single() 查不到資料（例如已在別的裝置刪除）
+    const msg = err?.code === "PGRST116" ? "找不到這筆資料，可能已經刪除了" : `發生錯誤：${err.message || err}`;
+    if (alive()) container.replaceChildren(h("div", { class: "empty" }, [msg, h("div", {}, h("a", { class: "btn", href: "#/trees" }, "回到我的樹"))]));
   }
 }

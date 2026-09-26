@@ -17,8 +17,9 @@ self.addEventListener("activate", (e) => {
 
 self.addEventListener("fetch", (e) => {
   const url = new URL(e.request.url);
-  // 只處理同網域 GET；Supabase 的資料與照片一律走網路
+  // 只處理同網域 GET；Supabase 的資料與照片一律走網路；version.json 用來偵測新版，不快取
   if (e.request.method !== "GET" || url.origin !== location.origin) return;
+  if (url.pathname.endsWith("/version.json")) return;
   e.respondWith(
     fetch(e.request)
       .then((res) => {

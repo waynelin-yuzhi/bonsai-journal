@@ -5,6 +5,7 @@ import {
 } from "../db.js";
 import { h, loading, toast, busy, confirmDialog, today } from "../ui.js";
 import { ANGLE_LABEL, VIGOR_LABEL } from "../constants.js";
+import { runningVersion, checkForUpdate } from "../update.js";
 
 export async function renderSettings(el, ctx) {
   el.append(loading());
@@ -79,7 +80,18 @@ export async function renderSettings(el, ctx) {
       h("p", { class: "muted" }, "把所有樹檔、紀錄和照片原檔打包成一個 ZIP 下載，裡面附一份可用 Excel 開啟的紀錄表。"),
       h("button", { class: "btn btn-primary btn-block", onclick: exportZip }, "⬇ 匯出備份"),
     ]),
-    h("div", { class: "about" }, "盆栽創作紀錄 · Phase 1"),
+    h("div", { class: "section-title" }, "版本"),
+    (() => {
+      const v = runningVersion();
+      return h("div", { class: "card row-between" }, [
+        h("div", {}, [
+          h("div", {}, v ? `v${v.version}` : "—"),
+          v?.date && h("div", { class: "hint" }, `更新日期 ${v.date.replace(/-/g, "/")}`),
+        ]),
+        h("button", { class: "btn btn-sm", onclick: () => checkForUpdate({ manual: true }) }, "檢查更新"),
+      ]);
+    })(),
+    h("div", { class: "about" }, "盆栽創作紀錄"),
   );
 }
 
