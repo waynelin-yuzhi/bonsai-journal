@@ -89,10 +89,18 @@ create index if not exists trees_owner_idx       on public.trees (owner_id);
 create index if not exists entries_tree_date_idx on public.entries (tree_id, entry_date desc);
 create index if not exists photos_entry_idx      on public.photos (entry_id);
 create index if not exists photos_tree_angle_idx on public.photos (tree_id, angle);
+create index if not exists photos_owner_idx      on public.photos (owner_id);
+create index if not exists entries_owner_idx     on public.entries (owner_id);
+create index if not exists trees_species_idx     on public.trees (species_id);
+create index if not exists species_owner_idx     on public.species (owner_id);
+create index if not exists op_types_species_idx  on public.operation_types (species_id);
+create index if not exists op_types_owner_idx    on public.operation_types (owner_id);
 
 -- ---------- updated_at 自動更新 ----------
 create or replace function public.touch_updated_at() returns trigger
-language plpgsql as $$
+language plpgsql
+set search_path = ''
+as $$
 begin
   new.updated_at = now();
   return new;
@@ -132,53 +140,72 @@ alter table public.trees           enable row level security;
 alter table public.entries         enable row level security;
 alter table public.photos          enable row level security;
 
-drop policy if exists species_read  on public.species;
-drop policy if exists species_write on public.species;
+drop policy if exists species_read   on public.species;
+drop policy if exists species_write  on public.species;
+drop policy if exists species_insert on public.species;
+drop policy if exists species_update on public.species;
+drop policy if exists species_delete on public.species;
 create policy species_read on public.species for select to authenticated
-  using (owner_id is null or owner_id = auth.uid());
-create policy species_write on public.species for all to authenticated
-  using (owner_id = auth.uid())
-  with check (owner_id = auth.uid());
+  using (owner_id is null or owner_id = (select auth.uid()));
+create policy species_insert on public.species for insert to authenticated
+  with check (owner_id = (select auth.uid()));
+create policy species_update on public.species for update to authenticated
+  using (owner_id = (select auth.uid()))
+  with check (owner_id = (select auth.uid()));
+create policy species_delete on public.species for delete to authenticated
+  using (owner_id = (select auth.uid()));
 
-drop policy if exists operation_types_read  on public.operation_types;
-drop policy if exists operation_types_write on public.operation_types;
+drop policy if exists operation_types_read   on public.operation_types;
+drop policy if exists operation_types_write  on public.operation_types;
+drop policy if exists operation_types_insert on public.operation_types;
+drop policy if exists operation_types_update on public.operation_types;
+drop policy if exists operation_types_delete on public.operation_types;
 create policy operation_types_read on public.operation_types for select to authenticated
-  using (owner_id is null or owner_id = auth.uid());
-create policy operation_types_write on public.operation_types for all to authenticated
-  using (owner_id = auth.uid())
+  using (owner_id is null or owner_id = (select auth.uid()));
+create policy operation_types_insert on public.operation_types for insert to authenticated
   with check (
-    owner_id = auth.uid()
+    owner_id = (select auth.uid())
     and (species_id is null or exists (
       select 1 from public.species s
-       where s.id = species_id and (s.owner_id is null or s.owner_id = auth.uid())))
+       where s.id = species_id and (s.owner_id is null or s.owner_id = (select auth.uid()))))
   );
+create policy operation_types_update on public.operation_types for update to authenticated
+  using (owner_id = (select auth.uid()))
+  with check (
+    owner_id = (select auth.uid())
+    and (species_id is null or exists (
+      select 1 from public.species s
+       where s.id = species_id and (s.owner_id is null or s.owner_id = (select auth.uid()))))
+  );
+create policy operation_types_delete on public.operation_types for delete to authenticated
+  using (owner_id = (select auth.uid()));
 
 drop policy if exists trees_own on public.trees;
 create policy trees_own on public.trees for all to authenticated
-  using (owner_id = auth.uid())
+  using (owner_id = (select auth.uid()))
   with check (
-    owner_id = auth.uid()
+    owner_id = (select auth.uid())
     and (species_id is null or exists (
       select 1 from public.species s
-       where s.id = species_id and (s.owner_id is null or s.owner_id = auth.uid())))
+       where s.id = species_id and (s.owner_id is null or s.owner_id = (select auth.uid()))))
   );
 
 drop policy if exists entries_own on public.entries;
 create policy entries_own on public.entries for all to authenticated
-  using (owner_id = auth.uid())
+  using (owner_id = (select auth.uid()))
   with check (
-    owner_id = auth.uid()
-    and exists (select 1 from public.trees t where t.id = tree_id and t.owner_id = auth.uid())
+    owner_id = (select auth.uid())
+    and exists (select 1 from public.trees t where t.id = tree_id and t.owner_id = (select auth.uid()))
   );
 
 drop policy if exists photos_own on public.photos;
 create policy photos_own on public.photos for all to authenticated
-  using (owner_id = auth.uid())
+  using (owner_id = (select auth.uid()))
   with check (
-    owner_id = auth.uid()
+    owner_id = (select auth.uid())
     and exists (
       select 1 from public.entries e
-       where e.id = entry_id and e.tree_id = photos.tree_id and e.owner_id = auth.uid())
+       where e.id = entry_id and e.tree_id = photos.tree_id and e.owner_id = (select auth.uid()))
   );
 
 grant usage on schema public to authenticated;
@@ -202,14 +229,14 @@ drop policy if exists photos_bucket_insert on storage.objects;
 drop policy if exists photos_bucket_update on storage.objects;
 drop policy if exists photos_bucket_delete on storage.objects;
 create policy photos_bucket_select on storage.objects for select to authenticated
-  using (bucket_id = 'photos' and (storage.foldername(name))[1] = auth.uid()::text);
+  using (bucket_id = 'photos' and (storage.foldername(name))[1] = (select auth.uid())::text);
 create policy photos_bucket_insert on storage.objects for insert to authenticated
-  with check (bucket_id = 'photos' and (storage.foldername(name))[1] = auth.uid()::text);
+  with check (bucket_id = 'photos' and (storage.foldername(name))[1] = (select auth.uid())::text);
 create policy photos_bucket_update on storage.objects for update to authenticated
-  using (bucket_id = 'photos' and (storage.foldername(name))[1] = auth.uid()::text)
-  with check (bucket_id = 'photos' and (storage.foldername(name))[1] = auth.uid()::text);
+  using (bucket_id = 'photos' and (storage.foldername(name))[1] = (select auth.uid())::text)
+  with check (bucket_id = 'photos' and (storage.foldername(name))[1] = (select auth.uid())::text);
 create policy photos_bucket_delete on storage.objects for delete to authenticated
-  using (bucket_id = 'photos' and (storage.foldername(name))[1] = auth.uid()::text);
+  using (bucket_id = 'photos' and (storage.foldername(name))[1] = (select auth.uid())::text);
 
 -- ============================================================
 -- 預設資料：樹種與作業項目（可在 App「設定」頁再自訂）
