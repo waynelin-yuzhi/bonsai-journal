@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#34503b" />
+  <title>盆栽創作紀錄</title>
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" href="./icons/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="盆栽紀錄" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="stylesheet" href="./css/styles.css" />
+</head>
+<body>
+  <!-- 登入頁 -->
+  <section id="auth-screen" class="auth-screen hidden">
+    <div class="auth-card">
+      <div class="brand">🌲 盆栽創作紀錄</div>
+      <div class="brand-sub">每一次修剪，都是作品的一頁</div>
+      <input id="auth-email" type="email" inputmode="email" autocomplete="username" placeholder="電子郵件" />
+      <input id="auth-password" type="password" autocomplete="current-password" placeholder="密碼（至少 6 碼）" />
+      <button id="auth-login" class="btn btn-primary btn-block">登入</button>
+      <button id="auth-signup" class="btn btn-ghost btn-block">註冊新帳號</button>
+      <p id="auth-msg" class="auth-msg"></p>
+    </div>
+  </section>
+
+  <!-- 主畫面 -->
+  <div id="app" class="app hidden">
+    <header class="topbar">
+      <button id="back-btn" class="icon-btn back hidden" aria-label="返回">‹</button>
+      <span id="page-title" class="page-title">我的樹</span>
+      <span id="topbar-actions" class="topbar-actions"></span>
+    </header>
+
+    <main id="view" class="view"></main>
+
+    <nav class="tabbar">
+      <a href="#/trees" class="tab" data-tab="trees"><span>🌲</span>我的樹</a>
+      <a href="#/recent" class="tab" data-tab="recent"><span>🗓️</span>最近紀錄</a>
+      <a href="#/settings" class="tab" data-tab="settings"><span>⚙️</span>設定</a>
+    </nav>
+  </div>
+
+  <div id="modal-root"></div>
+  <div id="toast-root"></div>
+
+  <script type="module" src="./js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#34503b"/>
+  <!-- 樹幹 -->
+  <path d="M250 372 C 238 330, 282 306, 262 268 C 246 238, 206 232, 214 196 C 220 170, 256 160, 270 150"
+        fill="none" stroke="#b07a4a" stroke-width="26" stroke-linecap="round"/>
+  <path d="M258 268 C 292 258, 318 246, 336 226" fill="none" stroke="#b07a4a" stroke-width="14" stroke-linecap="round"/>
+  <path d="M224 206 C 196 204, 176 212, 160 226" fill="none" stroke="#b07a4a" stroke-width="12" stroke-linecap="round"/>
+  <!-- 枝片 -->
+  <ellipse cx="274" cy="138" rx="78" ry="34" fill="#9cc49a"/>
+  <ellipse cx="344" cy="216" rx="64" ry="26" fill="#86b384"/>
+  <ellipse cx="156" cy="218" rx="60" ry="24" fill="#86b384"/>
+  <!-- 盆 -->
+  <rect x="146" y="366" width="220" height="16" rx="6" fill="#e9dccb"/>
+  <path d="M160 382 H352 L336 420 H176 Z" fill="#d9c6ae"/>
+</svg>
