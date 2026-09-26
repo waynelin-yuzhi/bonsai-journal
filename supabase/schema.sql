@@ -269,3 +269,35 @@ select v.op, s.id, v.sort
  where not exists (
    select 1 from public.operation_types o
     where o.name = v.op and o.species_id = s.id and o.owner_id is null);
+
+-- ============================================================
+-- 試用期：邀請制（只有名單內的 Email 可以註冊，其他人按註冊會被擋下）
+--   加人：insert into private.signup_allowlist (email) values ('someone@example.com');
+--   正式開放註冊：drop trigger if exists bonsai_signup_allowlist on auth.users;
+-- ============================================================
+create schema if not exists private;
+revoke all on schema private from public, anon, authenticated;
+
+create table if not exists private.signup_allowlist (
+  email      text primary key,
+  note       text,
+  created_at timestamptz not null default now()
+);
+
+create or replace function private.enforce_signup_allowlist() returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if not exists (
+    select 1 from private.signup_allowlist a where lower(a.email) = lower(new.email)
+  ) then
+    raise exception 'signups not allowed for this email';
+  end if;
+  return new;
+end $$;
+
+drop trigger if exists bonsai_signup_allowlist on auth.users;
+create trigger bonsai_signup_allowlist before insert on auth.users
+  for each row execute function private.enforce_signup_allowlist();

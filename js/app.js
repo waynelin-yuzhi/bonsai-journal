@@ -53,7 +53,13 @@ document.getElementById("auth-signup").addEventListener("click", async () => {
   authMsg.textContent = "";
   if (pwEl.value.length < 6) { authMsg.textContent = "密碼至少 6 碼"; return; }
   const { data, error } = await supabase.auth.signUp({ email: emailEl.value.trim(), password: pwEl.value });
-  if (error) { authMsg.textContent = "註冊失敗：" + error.message; return; }
+  if (error) {
+    // 試用期間資料庫只允許名單內的 Email 註冊（見 schema.sql「邀請制」）
+    authMsg.textContent = /database error saving new user|signups not allowed/i.test(error.message)
+      ? "目前為邀請制，尚未開放註冊"
+      : "註冊失敗：" + error.message;
+    return;
+  }
   if (data.session) toast("註冊成功", "ok");
   else authMsg.textContent = "註冊成功，請到信箱點驗證連結後再登入。";
 });

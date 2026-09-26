@@ -1,9 +1,9 @@
 // 設定：帳號、樹種與作業項目管理、匯出備份
 import {
   listSpecies, addSpecies, deleteSpecies, listOperationTypes, addOperationType, deleteOperationType,
-  currentEmail, signOut, exportData, downloadPhoto,
+  currentEmail, signOut, changePassword, exportData, downloadPhoto,
 } from "../db.js";
-import { h, loading, toast, busy, confirmDialog, today } from "../ui.js";
+import { h, loading, toast, busy, confirmDialog, sheet, field, today } from "../ui.js";
 import { ANGLE_LABEL, VIGOR_LABEL } from "../constants.js";
 import { runningVersion, checkForUpdate } from "../update.js";
 
@@ -69,7 +69,10 @@ export async function renderSettings(el, ctx) {
     h("div", { class: "section-title" }, "帳號"),
     h("div", { class: "card row-between" }, [
       h("span", {}, email),
-      h("button", { class: "btn btn-sm", onclick: signOut }, "登出"),
+      h("div", { class: "row-actions" }, [
+        h("button", { class: "btn btn-sm", onclick: openPasswordForm }, "修改密碼"),
+        h("button", { class: "btn btn-sm", onclick: signOut }, "登出"),
+      ]),
     ]),
     h("div", { class: "section-title" }, "樹種"),
     speciesCard,
@@ -93,6 +96,30 @@ export async function renderSettings(el, ctx) {
     })(),
     h("div", { class: "about" }, "盆栽創作紀錄"),
   );
+}
+
+// ---------- 修改密碼 ----------
+function openPasswordForm() {
+  const pw = h("input", { type: "password", autocomplete: "new-password", placeholder: "至少 8 碼" });
+  const pw2 = h("input", { type: "password", autocomplete: "new-password", placeholder: "再輸入一次" });
+  sheet("修改密碼", (close) => h("div", {}, [
+    field("新密碼", pw),
+    field("確認新密碼", pw2),
+    h("button", { class: "btn btn-primary btn-block", onclick: async (e) => {
+      const btn = e.currentTarget; // await 之後 currentTarget 會變成 null，先存起來
+      if (pw.value.length < 8) { toast("密碼至少 8 碼", "err"); return; }
+      if (pw.value !== pw2.value) { toast("兩次輸入的密碼不一樣", "err"); return; }
+      btn.disabled = true;
+      try {
+        await changePassword(pw.value);
+        close();
+        toast("密碼已更新", "ok");
+      } catch (err) {
+        toast("更新失敗：" + err.message, "err");
+        btn.disabled = false;
+      }
+    } }, "更新密碼"),
+  ]));
 }
 
 // ---------- 匯出 ZIP ----------

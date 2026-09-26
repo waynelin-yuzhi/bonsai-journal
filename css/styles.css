@@ -350,3 +350,4 @@ details.more[open] > summary { margin-bottom: 12px; }
 .update-actions { display: flex; gap: 6px; flex: 0 0 auto; }
 .btn-light { background: #fff; color: var(--pine-d); }
 .btn-ghost-light { background: transparent; color: #dfe8df; }
+.row-actions { display: flex; gap: 6px; flex: 0 0 auto; }

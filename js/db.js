@@ -203,6 +203,11 @@ export async function signOut() {
   await supabase.auth.signOut();
 }
 
+export async function changePassword(password) {
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) throw error;
+}
+
 // ---------- 匯出備份：分頁抓完所有資料（Supabase 單次最多回 1000 筆）----------
 async function fetchAll(build) {
   const out = [];

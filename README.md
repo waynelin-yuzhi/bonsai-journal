@@ -58,9 +58,11 @@ icons/                  App 圖示
 2. 等專案建立完成（約 1–2 分鐘）
 3. 左側 **SQL Editor** → **New query** → 把 `supabase/schema.sql` 整段貼上 → **Run**
    - 看到 `Success. No rows returned` 就完成了
-4. 左側 **Authentication → Users** → **Add user → Create new user**
-   - 輸入自己的 Email 和密碼，勾選 **Auto Confirm User** → 建立
-5. **Authentication → Sign In / Providers**，把 **Allow new users to sign up** 關掉（試用期間只有自己能登入；要開放時再打開）
+4. 試用期間是**邀請制**：只有 `private.signup_allowlist` 名單內的 Email 可以註冊，其他人按註冊會顯示「目前為邀請制」
+   - 加人（SQL Editor）：`insert into private.signup_allowlist (email) values ('someone@example.com');`
+   - 自己的帳號：先把 Email 加進名單，再到 **Authentication → Users → Add user → Create new user**（勾選 **Auto Confirm User**）
+   - 正式開放註冊：`drop trigger if exists bonsai_signup_allowlist on auth.users;`
+5. 登入後可在「設定 → 帳號 → 修改密碼」更換密碼
 6. 取得連線資訊（**Project Settings → API Keys**，或專案首頁上方的 **Connect**）：
    - **Project URL**（`https://xxxx.supabase.co`）
    - **Publishable key**（`sb_publishable_…`）
