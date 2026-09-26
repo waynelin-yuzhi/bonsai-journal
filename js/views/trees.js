@@ -2,6 +2,7 @@
 import { listTrees, listSpecies, saveTree, addSpecies } from "../db.js";
 import { h, sheet, field, loading, toast, photoImg, hydratePhotos, fmtDate, today } from "../ui.js";
 import { SOURCES } from "../constants.js";
+import { icon, enso } from "../icons.js";
 
 let filter = "all"; // all / archived / 樹種 id
 
@@ -12,7 +13,7 @@ export async function renderTrees(el, ctx) {
   const content = h("div");
   el.replaceChildren(
     content,
-    h("button", { class: "fab", onclick: () => openTreeForm({ species, onSaved: goTree }) }, "＋ 新增樹")
+    h("button", { class: "fab", onclick: () => openTreeForm({ species, onSaved: goTree }) }, [icon("plus"), "新增樹"])
   );
 
   const draw = () => {
@@ -36,13 +37,15 @@ export async function renderTrees(el, ctx) {
       archived.length && chip("archived", `已封存 ${archived.length}`),
     ]);
 
-    const grid = h("div", { class: "tree-grid" }, shown.map(treeCard));
+    // 編號依建立順序（No.01 是第一棵），篩選後也維持原編號
+    const no = new Map([...trees].sort((a, b) => a.created_at.localeCompare(b.created_at)).map((t, i) => [t.id, i + 1]));
+    const grid = h("div", { class: "tree-grid" }, shown.map((t) => treeCard(t, no.get(t.id))));
     const empty = !trees.length &&
       h("div", { class: "empty-hero" }, [
-        h("div", { class: "empty-icon" }, "🌲"),
+        enso(),
         h("div", { class: "empty-title" }, "還沒有樹"),
         h("p", {}, "先建立第一棵樹的樹檔，再幫它拍一組「初始紀錄」。"),
-        h("button", { class: "btn btn-primary", onclick: () => openTreeForm({ species, onSaved: goTree }) }, "＋ 建立第一棵樹"),
+        h("button", { class: "btn btn-primary", onclick: () => openTreeForm({ species, onSaved: goTree }) }, [icon("plus"), "建立第一棵樹"]),
       ]);
 
     content.replaceChildren(...(trees.length ? [chips, grid] : [empty]));
@@ -54,15 +57,16 @@ export async function renderTrees(el, ctx) {
 
 const goTree = (t) => { location.hash = `#/tree/${t.id}`; };
 
-function treeCard(t) {
+function treeCard(t, no) {
   const meta = [t.code, t.species_name].filter(Boolean).join(" · ");
   return h("a", { class: "tree-card", href: `#/tree/${t.id}` }, [
-    h("div", { class: "tree-cover" }, t.cover_thumb ? photoImg(t.cover_thumb) : h("span", { class: "cover-ph" }, "🌲")),
+    h("div", { class: "tree-cover" }, t.cover_thumb ? photoImg(t.cover_thumb) : h("span", { class: "cover-ph" }, enso())),
     h("div", { class: "tree-card-body" }, [
+      h("div", { class: "tree-no" }, `No.${String(no).padStart(2, "0")}`),
       h("div", { class: "tree-name" }, t.name),
       meta && h("div", { class: "tree-meta" }, meta),
       h("div", { class: "tree-meta" }, t.entry_count
-        ? `${t.entry_count} 次紀錄 · ${fmtDate(t.last_entry_date)}`
+        ? `${t.entry_count} REC · ${fmtDate(t.last_entry_date)}`
         : "尚無紀錄"),
     ]),
   ]);
@@ -78,7 +82,7 @@ export function openTreeForm({ tree = null, species, onSaved }) {
   const speciesSel = h("select", {}, [
     h("option", { value: "" }, "（未指定）"),
     ...species.map((s) => h("option", { value: s.id }, s.name)),
-    h("option", { value: NEW }, "＋ 新增樹種…"),
+    h("option", { value: NEW }, "新增樹種…"),
   ]);
   speciesSel.value = tree?.species_id || (species[0]?.id ?? "");
   const newSpecies = h("input", { type: "text", placeholder: "新樹種名稱，例：羅漢松", class: "hidden" });

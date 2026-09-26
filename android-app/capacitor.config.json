@@ -1,6 +1,6 @@
 {
   "appId": "com.yuzhiplant.bonsaijournal",
-  "appName": "盆栽紀錄",
+  "appName": "Bonsai Journal",
   "webDir": "www",
   "server": {
     "url": "https://waynelin-yuzhi.github.io/bonsai-journal/",

@@ -2,6 +2,7 @@
 // 一般瀏覽器本身就會提供這兩個選項，維持原本行為。
 import { h, sheet } from "./ui.js";
 import { isNativeApp } from "./platform.js";
+import { icon } from "./icons.js";
 
 export function bindPhotoPicker(trigger, input) {
   if (!isNativeApp()) return;
@@ -14,8 +15,8 @@ export function bindPhotoPicker(trigger, input) {
       input.click();
     };
     sheet("加入照片", (close) => h("div", {}, [
-      h("button", { class: "btn btn-primary btn-block", onclick: () => { close(); open(true); } }, "📷 拍照"),
-      h("button", { class: "btn btn-block", onclick: () => { close(); open(false); } }, "🖼️ 從相簿選"),
+      h("button", { class: "btn btn-primary btn-block", onclick: () => { close(); open(true); } }, [icon("camera"), "拍照"]),
+      h("button", { class: "btn btn-block", onclick: () => { close(); open(false); } }, [icon("image"), "從相簿選"]),
     ]));
   });
 }

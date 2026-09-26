@@ -3,45 +3,54 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#34503b" />
-  <title>盆栽創作紀錄</title>
+  <meta name="theme-color" content="#F2EEE5" />
+  <title>Bonsai Journal</title>
   <link rel="manifest" href="./manifest.webmanifest" />
-  <link rel="icon" href="./icons/icon.svg" type="image/svg+xml" />
+  <link rel="icon" href="./icons/icon-192.png" type="image/png" />
   <link rel="apple-touch-icon" href="./icons/icon-192.png" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-title" content="盆栽紀錄" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Bonsai Journal" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@500;700&display=swap" />
   <link rel="stylesheet" href="./css/styles.css" />
 </head>
 <body>
   <!-- 登入頁 -->
   <section id="auth-screen" class="auth-screen hidden">
     <div class="auth-card">
-      <div class="brand">🌲 盆栽創作紀錄</div>
-      <div class="brand-sub">每一次修剪，都是作品的一頁</div>
+      <i data-enso class="auth-mark"></i>
+      <div class="brand">BONSAI JOURNAL</div>
+      <div class="brand-sub">盆栽創作紀錄</div>
       <input id="auth-email" type="email" inputmode="email" autocomplete="username" placeholder="電子郵件" />
-      <input id="auth-password" type="password" autocomplete="current-password" placeholder="密碼（至少 6 碼）" />
+      <input id="auth-password" type="password" autocomplete="current-password" placeholder="密碼" />
       <button id="auth-login" class="btn btn-primary btn-block">登入</button>
       <button id="auth-signup" class="btn btn-ghost btn-block">註冊新帳號</button>
       <p id="auth-msg" class="auth-msg"></p>
     </div>
+    <div class="auth-vertical">一枝一葉　皆是歲月</div>
+    <div class="auth-foot">EST. 2026 — TAIWAN</div>
   </section>
 
   <!-- 主畫面 -->
   <div id="app" class="app hidden">
     <header class="topbar">
-      <button id="back-btn" class="icon-btn back hidden" aria-label="返回">‹</button>
-      <span id="page-title" class="page-title">我的樹</span>
+      <button id="back-btn" class="icon-btn back hidden" aria-label="返回"><i data-icon="back"></i></button>
+      <div class="titles">
+        <span id="page-eyebrow" class="eyebrow">INDEX</span>
+        <span id="page-title" class="page-title">我的樹</span>
+      </div>
       <span id="topbar-actions" class="topbar-actions"></span>
     </header>
 
     <main id="view" class="view"></main>
 
     <nav class="tabbar">
-      <a href="#/trees" class="tab" data-tab="trees"><span>🌲</span>我的樹</a>
-      <a href="#/recent" class="tab" data-tab="recent"><span>🗓️</span>最近紀錄</a>
-      <a href="#/settings" class="tab" data-tab="settings"><span>⚙️</span>設定</a>
+      <a href="#/trees" class="tab" data-tab="trees"><i data-icon="tree"></i><span>我的樹</span></a>
+      <a href="#/recent" class="tab" data-tab="recent"><i data-icon="timeline"></i><span>最近紀錄</span></a>
+      <a href="#/settings" class="tab" data-tab="settings"><i data-icon="settings"></i><span>設定</span></a>
     </nav>
   </div>
 

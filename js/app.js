@@ -4,6 +4,9 @@ import { startRouter } from "./router.js";
 import { toast } from "./ui.js";
 import { startUpdateCheck } from "./update.js";
 import { initInstall } from "./install.js";
+import { hydrateIcons } from "./icons.js";
+
+hydrateIcons();
 
 // 要在頁面一開始就監聽，Chrome 的安裝事件可能很早就發出
 initInstall();
@@ -27,7 +30,7 @@ function showAuth() {
 async function init() {
   if (!isConfigured()) {
     showAuth();
-    authMsg.innerHTML = "⚠️ 尚未設定 Supabase。<br>請在 <code>js/config.js</code> 填入專案 URL 與 key。";
+    authMsg.innerHTML = "尚未設定 Supabase。<br>請在 <code>js/config.js</code> 填入專案 URL 與 key。";
     document.getElementById("auth-login").disabled = true;
     document.getElementById("auth-signup").disabled = true;
     return;

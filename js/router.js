@@ -10,14 +10,14 @@ import { renderSettings } from "./views/settings.js";
 
 const ID = "([0-9a-f-]{36})";
 const routes = [
-  { re: /^trees$/, tab: "trees", title: "我的樹", render: renderTrees },
-  { re: new RegExp(`^tree/${ID}$`), tab: "trees", parent: () => "#/trees", render: renderTree },
-  { re: new RegExp(`^tree/${ID}/new$`), tab: "trees", title: "新增紀錄", noTabs: true, parent: ([id]) => `#/tree/${id}`, render: (el, ctx) => renderEntryForm(el, { ...ctx, mode: "new" }) },
-  { re: new RegExp(`^tree/${ID}/compare$`), tab: "trees", title: "前後對比", parent: ([id]) => `#/tree/${id}`, render: renderCompare },
-  { re: new RegExp(`^entry/${ID}$`), tab: "trees", title: "紀錄", parent: () => "#/trees", render: renderEntry },
-  { re: new RegExp(`^entry/${ID}/edit$`), tab: "trees", title: "編輯紀錄", noTabs: true, parent: ([id]) => `#/entry/${id}`, render: (el, ctx) => renderEntryForm(el, { ...ctx, mode: "edit" }) },
-  { re: /^recent$/, tab: "recent", title: "最近紀錄", render: renderRecent },
-  { re: /^settings$/, tab: "settings", title: "設定", render: renderSettings },
+  { re: /^trees$/, tab: "trees", eyebrow: "INDEX", title: "我的樹", render: renderTrees },
+  { re: new RegExp(`^tree/${ID}$`), tab: "trees", eyebrow: "TREE", parent: () => "#/trees", render: renderTree },
+  { re: new RegExp(`^tree/${ID}/new$`), tab: "trees", eyebrow: "NEW RECORD", title: "新增紀錄", noTabs: true, parent: ([id]) => `#/tree/${id}`, render: (el, ctx) => renderEntryForm(el, { ...ctx, mode: "new" }) },
+  { re: new RegExp(`^tree/${ID}/compare$`), tab: "trees", eyebrow: "COMPARE", title: "前後對比", parent: ([id]) => `#/tree/${id}`, render: renderCompare },
+  { re: new RegExp(`^entry/${ID}$`), tab: "trees", eyebrow: "RECORD", title: "紀錄", parent: () => "#/trees", render: renderEntry },
+  { re: new RegExp(`^entry/${ID}/edit$`), tab: "trees", eyebrow: "EDIT", title: "編輯紀錄", noTabs: true, parent: ([id]) => `#/entry/${id}`, render: (el, ctx) => renderEntryForm(el, { ...ctx, mode: "edit" }) },
+  { re: /^recent$/, tab: "recent", eyebrow: "TIMELINE", title: "最近紀錄", render: renderRecent },
+  { re: /^settings$/, tab: "settings", eyebrow: "SETTINGS", title: "設定", render: renderSettings },
 ];
 
 let navCount = 0;       // App 內換頁次數：大於 0 才用 history.back()，否則回上層
@@ -69,6 +69,7 @@ async function handleRoute() {
   const titleEl = document.getElementById("page-title");
   const actionsEl = document.getElementById("topbar-actions");
   titleEl.textContent = route.title || "";
+  document.getElementById("page-eyebrow").textContent = route.eyebrow || "";
   actionsEl.replaceChildren();
 
   const view = document.getElementById("view");

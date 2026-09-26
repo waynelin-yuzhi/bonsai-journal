@@ -3,7 +3,8 @@ import {
   listSpecies, addSpecies, deleteSpecies, listOperationTypes, addOperationType, deleteOperationType,
   currentEmail, signOut, changePassword, exportData, downloadPhoto,
 } from "../db.js";
-import { h, loading, toast, busy, confirmDialog, sheet, field, today } from "../ui.js";
+import { h, loading, toast, busy, confirmDialog, sheet, field, today, sectionTitle } from "../ui.js";
+import { icon, enso } from "../icons.js";
 import { ANGLE_LABEL, VIGOR_LABEL } from "../constants.js";
 import { runningVersion, checkForUpdate } from "../update.js";
 import { isStandalone, canInstall, isIOS, promptInstall, onInstallChange } from "../install.js";
@@ -23,7 +24,7 @@ export async function renderSettings(el, ctx) {
       s.owner_id && h("button", { class: "chip-x", "aria-label": "刪除", onclick: async () => {
         if (!(await confirmDialog(`刪除樹種「${s.name}」？`, "使用這個樹種的樹會變成「未指定」，它專屬的作業項目也會一起刪除。", "刪除"))) return;
         try { await deleteSpecies(s.id); refresh(); } catch (err) { toast("刪除失敗：" + err.message, "err"); }
-      } }, "✕"),
+      } }, icon("close")),
     ]))),
     h("div", { class: "inline-add" }, [
       speciesInput,
@@ -49,7 +50,7 @@ export async function renderSettings(el, ctx) {
           o.name,
           o.owner_id && h("button", { class: "chip-x", "aria-label": "刪除", onclick: async () => {
             try { await deleteOperationType(o.id); refresh(); } catch (err) { toast("刪除失敗：" + err.message, "err"); }
-          } }, "✕"),
+          } }, icon("close")),
         ]))),
       ]);
     }),
@@ -68,40 +69,40 @@ export async function renderSettings(el, ctx) {
   ]);
 
   el.replaceChildren(
-    h("div", { class: "section-title" }, "帳號"),
-    h("div", { class: "card row-between" }, [
-      h("span", {}, email),
+    sectionTitle("帳號", "ACCOUNT"),
+    h("div", { class: "card" }, [
+      h("div", { class: "account" }, email),
       h("div", { class: "row-actions" }, [
-        h("button", { class: "btn btn-sm", onclick: openPasswordForm }, "修改密碼"),
-        h("button", { class: "btn btn-sm", onclick: signOut }, "登出"),
+        h("button", { class: "btn btn-sm", onclick: openPasswordForm }, [icon("key"), "修改密碼"]),
+        h("button", { class: "btn btn-sm", onclick: signOut }, [icon("logout"), "登出"]),
       ]),
     ]),
-    h("div", { class: "section-title" }, "樹種"),
+    sectionTitle("樹種", "SPECIES"),
     speciesCard,
-    h("div", { class: "section-title" }, "作業項目"),
+    sectionTitle("作業項目", "OPERATIONS"),
     opsCard,
-    h("div", { class: "section-title" }, "資料備份"),
+    sectionTitle("資料備份", "BACKUP"),
     h("div", { class: "card" }, isNativeApp()
       // Android App 裡沒辦法下載檔案，請改用瀏覽器開啟網頁版匯出
       ? [h("p", { class: "muted" }, "App 內無法下載檔案。請用 Chrome 打開網頁版，登入後到「設定 → 匯出備份」："), h("p", {}, WEB_URL)]
       : [
           h("p", { class: "muted" }, "把所有樹檔、紀錄和照片原檔打包成一個 ZIP 下載，裡面附一份可用 Excel 開啟的紀錄表。"),
-          h("button", { class: "btn btn-primary btn-block", onclick: exportZip }, "⬇ 匯出備份"),
+          h("button", { class: "btn btn-primary btn-block", onclick: exportZip }, [icon("download"), "匯出備份"]),
         ]),
-    h("div", { class: "section-title" }, "安裝 App"),
+    sectionTitle("安裝 App", "INSTALL"),
     installCard(),
-    h("div", { class: "section-title" }, "版本"),
+    sectionTitle("版本", "VERSION"),
     (() => {
       const v = runningVersion();
       return h("div", { class: "card row-between" }, [
         h("div", {}, [
-          h("div", {}, v ? `v${v.version}` : "—"),
-          v?.date && h("div", { class: "hint" }, `更新日期 ${v.date.replace(/-/g, "/")}`),
+          h("div", { class: "mono" }, v ? `v${v.version}` : "—"),
+          v?.date && h("div", { class: "hint" }, `更新日期 ${v.date.replace(/-/g, ".")}`),
         ]),
-        h("button", { class: "btn btn-sm", onclick: () => checkForUpdate({ manual: true }) }, "檢查更新"),
+        h("button", { class: "btn btn-sm", onclick: () => checkForUpdate({ manual: true }) }, [icon("refresh"), "檢查更新"]),
       ]);
     })(),
-    h("div", { class: "about" }, "盆栽創作紀錄"),
+    h("div", { class: "about" }, [enso(), "BONSAI JOURNAL", h("br"), "盆栽創作紀錄 · EST. 2026"]),
   );
 }
 
@@ -112,18 +113,18 @@ function installCard() {
   const card = h("div", { class: "card" });
   const draw = () => {
     if (isStandalone()) {
-      card.replaceChildren(h("div", {}, isNativeApp() ? "✓ 正在使用 Android App" : "✓ 已安裝，正在以 App 模式使用"));
+      card.replaceChildren(h("div", { class: "install-state" }, [icon("check"), isNativeApp() ? "正在使用 Android App" : "已安裝，正在以 App 模式使用"]));
     } else if (canInstall()) {
       card.replaceChildren(
         h("p", { class: "muted" }, "安裝後會出現在手機桌面和 App 列表，開啟時全螢幕、沒有網址列。"),
-        h("button", { class: "btn btn-primary btn-block", onclick: promptInstall }, "安裝到手機"),
+        h("button", { class: "btn btn-primary btn-block", onclick: promptInstall }, [icon("phone"), "安裝到手機"]),
       );
     } else if (isIOS()) {
       card.replaceChildren(h("p", { class: "muted" }, "iPhone：用 Safari 開啟本頁 → 分享按鈕 →「加入主畫面」。"));
     } else {
       card.replaceChildren(
         h("p", { class: "muted" }, "Android 可以直接下載安裝檔（APK）："),
-        h("a", { class: "btn btn-primary btn-block", href: APK_URL }, "⬇ 下載 Android App"),
+        h("a", { class: "btn btn-primary btn-block", href: APK_URL }, [icon("phone"), "下載 Android App"]),
         h("p", { class: "hint" }, "或用 Chrome 右上角選單 →「安裝應用程式」。"),
       );
     }

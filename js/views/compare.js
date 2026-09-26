@@ -1,6 +1,7 @@
 // 前後對比：同一角度選兩個日期，拖曳分隔線比較；也可以依時間順序播放（縮時）
 import { getTree, treePhotos, signedUrls } from "../db.js";
 import { h, loading, fmtDate } from "../ui.js";
+import { icon } from "../icons.js";
 import { ANGLES } from "../constants.js";
 
 export async function renderCompare(el, ctx) {
@@ -17,7 +18,7 @@ export async function renderCompare(el, ctx) {
     el.replaceChildren(h("div", { class: "empty" }, [
       h("p", {}, "至少要有兩次同角度的照片才能對比。"),
       h("p", { class: "muted" }, "每次紀錄都拍一張「正面」，這裡就會自動排出整個變化過程。"),
-      h("a", { class: "btn btn-primary", href: `#/tree/${treeId}/new` }, "＋ 新增紀錄"),
+      h("a", { class: "btn btn-primary", href: `#/tree/${treeId}/new` }, [icon("plus"), "新增紀錄"]),
     ]));
     return;
   }
@@ -62,7 +63,7 @@ export async function renderCompare(el, ctx) {
     // 下層是較新的 B，上層是較舊的 A，只露出分隔線左邊
     const imgB = h("img", { src: urls[pb.path], alt: "" });
     const imgA = h("img", { src: urls[pa.path], alt: "", class: "top" });
-    const line = h("div", { class: "split-line" }, h("span", { class: "split-handle" }, "⇆"));
+    const line = h("div", { class: "split-line" }, h("span", { class: "split-handle" }, [icon("back"), icon("forward")]));
     const box = h("div", { class: "compare-box" }, [
       imgB, imgA, line,
       h("span", { class: "badge left" }, `A ${fmtDate(pa.entry_date)}`),
@@ -90,7 +91,7 @@ export async function renderCompare(el, ctx) {
         h("div", { class: "field" }, [h("label", {}, "A（較早）"), dateSelect(a, (i) => { a = i; drawCompare(); })]),
         h("div", { class: "field" }, [h("label", {}, "B（較晚）"), dateSelect(b, (i) => { b = i; drawCompare(); })]),
       ]),
-      h("button", { class: "btn btn-block", onclick: play }, `▶ 播放全部 ${list.length} 張（縮時）`),
+      h("button", { class: "btn btn-block", onclick: play }, [icon("play"), `播放全部 ${list.length} 張（縮時）`]),
     );
   }
 
@@ -109,7 +110,7 @@ export async function renderCompare(el, ctx) {
     const last = list[list.length - 1];
     if (last.width && last.height) box.style.aspectRatio = `${last.width} / ${last.height}`;
     stage.replaceChildren(box, h("div", { class: "hint center" }, "點畫面停止"));
-    controls.replaceChildren(h("button", { class: "btn btn-block", onclick: () => { stop(); drawCompare(); } }, "■ 停止，回到對比"));
+    controls.replaceChildren(h("button", { class: "btn btn-block", onclick: () => { stop(); drawCompare(); } }, [icon("stop"), "停止，回到對比"]));
     box.addEventListener("click", () => { stop(); drawCompare(); });
 
     let i = 0;
