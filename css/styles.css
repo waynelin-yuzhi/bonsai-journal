@@ -73,6 +73,8 @@ a { color: inherit; text-decoration: none; }
 .icon-btn.dark { color: var(--stone); width: 32px; height: 32px; }
 .icon-btn.dark .ico { width: 18px; height: 18px; }
 .icon-btn.back { margin-left: -8px; }
+.icon-btn.labeled { width: auto; gap: 5px; padding: 0 8px; font-size: 13px; letter-spacing: .12em; font-weight: 500; }
+.icon-btn.labeled .ico { width: 19px; height: 19px; }
 
 /* ---------- 登入 ---------- */
 .auth-screen {
@@ -187,13 +189,21 @@ body.no-tabs .tabbar { display: none; }
 .empty-hero .enso { width: 132px; height: 132px; color: var(--ink); }
 .empty-title { font-family: var(--serif); font-size: 21px; font-weight: 700; color: var(--ink); margin: 14px 0 6px; letter-spacing: .2em; }
 .empty-hero p { margin: 0 0 20px; }
+.empty-hero .btn { display: flex; width: 100%; max-width: 280px; margin: 0 auto 10px; }
 .row { display: flex; gap: 10px; }
 .row > * { flex: 1; min-width: 0; }
 .row-between { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .row-between > span { overflow: hidden; text-overflow: ellipsis; }
 .row-actions { display: flex; gap: 6px; flex: 0 0 auto; }
 .account { font-family: var(--mono); font-size: 14px; word-break: break-all; margin-bottom: 12px; }
-.account + .row-actions > * { flex: 1; }
+.account ~ .row-actions { margin-top: 14px; }
+.account ~ .row-actions > * { flex: 1; }
+.creator-row { align-items: center; border-top: 1px solid var(--line); padding-top: 10px; }
+.creator-row > span:nth-child(2) { flex: 1; min-width: 0; font-family: var(--serif); font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.creator-row .k { font-size: 11px; color: var(--stone); letter-spacing: .15em; padding-top: 0; }
+.notice { font-size: 13px; line-height: 1.7; padding: 10px 12px; margin: 4px 0 14px; border: 1px solid var(--line-2); border-left: 3px solid var(--ink); background: var(--card); color: var(--ink-2); }
+.notice.err { border-left-color: var(--shu); color: var(--shu); margin-top: 14px; }
+.uid-static { font-family: var(--mono); font-size: 15px; letter-spacing: .1em; padding: 10px 0 2px; color: var(--shu); }
 
 /* ---------- 表單 ---------- */
 .field { margin-bottom: 14px; }
@@ -225,7 +235,7 @@ textarea { resize: vertical; line-height: 1.7; }
 }
 .fab .ico { width: 18px; height: 18px; }
 
-/* ---------- 我的樹 ---------- */
+/* ---------- 我的盆栽 ---------- */
 .tree-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px 12px; }
 .tree-card { display: block; }
 .tree-cover { aspect-ratio: 4 / 5; background: var(--paper-2); display: flex; align-items: center; justify-content: center; border: 1px solid var(--line); overflow: hidden; }
@@ -236,13 +246,20 @@ textarea { resize: vertical; line-height: 1.7; }
 .tree-name { font-family: var(--serif); font-weight: 700; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.35; }
 .tree-meta { font-size: 11px; color: var(--stone); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: var(--mono); }
 
-/* ---------- 單棵樹 ---------- */
+/* ---------- 單盆盆栽 ---------- */
 .tree-hero { margin: -18px -16px 14px; border-bottom: 1px solid var(--ink); background: var(--card); }
 .hero-cover { aspect-ratio: 4 / 3; background: var(--ink); display: flex; align-items: center; justify-content: center; cursor: zoom-in; }
 .hero-cover img { width: 100%; height: 100%; object-fit: contain; display: block; }
 .hero-cover.empty-cover { aspect-ratio: 16 / 7; background: var(--paper-2); cursor: default; }
 .hero-cover.empty-cover .enso { width: 86px; height: 86px; color: var(--line-2); }
 .hero-body { padding: 16px 16px 18px; }
+.hero-uid {
+  display: inline-flex; align-items: center; gap: 8px; margin: 0 0 8px; padding: 3px 8px 3px 0;
+  border: none; background: none; cursor: pointer; color: var(--ink);
+}
+.hero-uid .k { font-size: 10px; letter-spacing: .2em; background: var(--shu); color: var(--paper); padding: 1px 6px; }
+.hero-uid .v { font-family: var(--mono); font-size: 13px; letter-spacing: .12em; }
+.hero-uid .ico { width: 14px; height: 14px; color: var(--stone); }
 .hero-title { font-family: var(--serif); font-size: 26px; font-weight: 700; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; line-height: 1.3; letter-spacing: .04em; }
 .hero-title .code { font-family: var(--mono); font-size: 13px; color: var(--shu); font-weight: 500; letter-spacing: .08em; }
 .hero-facts { color: var(--stone); font-size: 13px; margin-top: 4px; letter-spacing: .06em; }
@@ -270,7 +287,34 @@ textarea { resize: vertical; line-height: 1.7; }
 .tl-thumbs .more { display: flex; align-items: center; justify-content: center; font-size: 12px; font-family: var(--mono); color: var(--stone); background: var(--paper-2); }
 .tl-note { font-size: 13px; margin-top: 8px; color: var(--ink-2); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; white-space: pre-wrap; }
 .tl-next { font-size: 12px; margin-top: 8px; color: var(--shu); letter-spacing: .04em; }
+.tl-author { font-size: 11px; color: var(--stone); margin-top: 4px; letter-spacing: .08em; }
+.tl-author::before { content: "BY "; font-family: var(--latin); letter-spacing: .2em; }
 .danger-zone { text-align: center; margin: 36px 0 8px; }
+.lock-note { margin: 28px 0 8px; }
+
+/* 傳承：每一段時期的創作者 */
+.lineage { border-top: 1px solid var(--ink); margin-bottom: 12px; }
+.lin-item { display: flex; gap: 14px; padding: 12px 2px; border-bottom: 1px solid var(--line); }
+.lin-no { font-family: var(--mono); font-size: 12px; color: var(--stone); padding-top: 2px; }
+.lin-item.current .lin-no { color: var(--shu); }
+.lin-body { flex: 1; min-width: 0; }
+.lin-name { font-family: var(--serif); font-weight: 700; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.lin-name .tag { font-family: var(--sans); font-weight: 400; }
+.lin-date { font-family: var(--mono); font-size: 12px; color: var(--stone); margin-top: 2px; }
+
+/* 轉移碼 */
+.transfer-card { border: 1px solid var(--ink); background: var(--card); padding: 14px; text-align: center; }
+.transfer-card > .k { font-size: 11px; color: var(--stone); letter-spacing: .15em; }
+.transfer-code { font-family: var(--mono); font-size: 32px; font-weight: 500; letter-spacing: .14em; margin: 6px 0 2px; color: var(--ink); }
+.transfer-card .hint { margin: 0 0 12px; }
+.transfer-card .btn-ghost-danger { margin-top: 8px; }
+.code-input { font-family: var(--mono); font-size: 24px !important; letter-spacing: .2em; text-align: center; text-transform: uppercase; }
+.transfer-preview { border: 1px solid var(--ink); background: var(--card); padding: 14px; margin-top: 14px; }
+.transfer-preview .btn { margin-top: 12px; }
+.tp-uid { font-family: var(--mono); font-size: 12px; color: var(--shu); letter-spacing: .12em; }
+.tp-name { font-family: var(--serif); font-size: 21px; font-weight: 700; letter-spacing: .04em; }
+.tp-meta { font-size: 12px; color: var(--stone); font-family: var(--mono); margin-bottom: 8px; }
+.transfer-preview .kv-row .k { font-size: 11px; color: var(--stone); letter-spacing: .15em; }
 
 /* ---------- 新增紀錄 ---------- */
 .angle-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
@@ -324,9 +368,10 @@ details.more[open] > summary { margin-bottom: 14px; }
 .save-bar .btn { max-width: 720px; margin: 10px auto 0; }
 
 /* ---------- 單筆紀錄 ---------- */
-.entry-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin: 0 0 4px; }
+.entry-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 2px 10px; margin: 0 0 4px; }
 .entry-date { font-family: var(--mono); font-size: 26px; font-weight: 500; letter-spacing: .02em; }
 .entry-tree { color: var(--stone); font-size: 13px; font-family: var(--serif); }
+.entry-author { flex-basis: 100%; font-size: 12px; color: var(--shu); letter-spacing: .06em; }
 .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 6px; margin-bottom: 14px; }
 .photo-cell { position: relative; padding: 0; border: 1px solid var(--line); overflow: hidden; aspect-ratio: 3 / 4; background: var(--paper-2); cursor: zoom-in; }
 .photo-cell img { width: 100%; height: 100%; object-fit: cover; display: block; }

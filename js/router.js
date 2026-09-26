@@ -1,6 +1,6 @@
 // 雜湊路由：#/trees、#/tree/:id、#/tree/:id/new、#/entry/:id、#/entry/:id/edit…
 import { h } from "./ui.js";
-import { renderTrees } from "./views/trees.js";
+import { renderTrees, openReceive } from "./views/trees.js";
 import { renderTree } from "./views/tree.js";
 import { renderEntry } from "./views/entry.js";
 import { renderEntryForm } from "./views/entry-form.js";
@@ -10,8 +10,10 @@ import { renderSettings } from "./views/settings.js";
 
 const ID = "([0-9a-f-]{36})";
 const routes = [
-  { re: /^trees$/, tab: "trees", eyebrow: "INDEX", title: "我的樹", render: renderTrees },
-  { re: new RegExp(`^tree/${ID}$`), tab: "trees", eyebrow: "TREE", parent: () => "#/trees", render: renderTree },
+  { re: /^trees$/, tab: "trees", eyebrow: "INDEX", title: "我的盆栽", render: renderTrees },
+  // 轉移連結：#/receive/XXXX-XXXX → 回到列表並打開「接收盆栽」
+  { re: /^receive\/([0-9A-Za-z]{4}-?[0-9A-Za-z]{4})$/, tab: "trees", render: (el, ctx) => { location.replace("#/trees"); openReceive(ctx.params[0]); } },
+  { re: new RegExp(`^tree/${ID}$`), tab: "trees", eyebrow: "BONSAI", parent: () => "#/trees", render: renderTree },
   { re: new RegExp(`^tree/${ID}/new$`), tab: "trees", eyebrow: "NEW RECORD", title: "新增紀錄", noTabs: true, parent: ([id]) => `#/tree/${id}`, render: (el, ctx) => renderEntryForm(el, { ...ctx, mode: "new" }) },
   { re: new RegExp(`^tree/${ID}/compare$`), tab: "trees", eyebrow: "COMPARE", title: "前後對比", parent: ([id]) => `#/tree/${id}`, render: renderCompare },
   { re: new RegExp(`^entry/${ID}$`), tab: "trees", eyebrow: "RECORD", title: "紀錄", parent: () => "#/trees", render: renderEntry },
@@ -90,6 +92,6 @@ async function handleRoute() {
     console.error(err);
     // PGRST116：用 .single() 查不到資料（例如已在別的裝置刪除）
     const msg = err?.code === "PGRST116" ? "找不到這筆資料，可能已經刪除了" : `發生錯誤：${err.message || err}`;
-    if (alive()) container.replaceChildren(h("div", { class: "empty" }, [msg, h("div", {}, h("a", { class: "btn", href: "#/trees" }, "回到我的樹"))]));
+    if (alive()) container.replaceChildren(h("div", { class: "empty" }, [msg, h("div", {}, h("a", { class: "btn", href: "#/trees" }, "回到我的盆栽"))]));
   }
 }

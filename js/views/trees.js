@@ -1,6 +1,6 @@
-// 我的樹：作品列表 + 新增／編輯樹檔
-import { listTrees, listSpecies, saveTree, addSpecies } from "../db.js";
-import { h, sheet, field, loading, toast, photoImg, hydratePhotos, fmtDate, today } from "../ui.js";
+// 我的盆栽：作品列表 + 新增／編輯盆栽檔案 + 接收別人轉移的盆栽
+import { listTrees, listSpecies, saveTree, addSpecies, previewTransfer, acceptTransfer } from "../db.js";
+import { h, sheet, field, loading, toast, busy, photoImg, hydratePhotos, fmtDate, fmtDateTime, today } from "../ui.js";
 import { SOURCES } from "../constants.js";
 import { icon, enso } from "../icons.js";
 
@@ -10,10 +10,11 @@ export async function renderTrees(el, ctx) {
   el.append(loading());
   const [trees, species] = await Promise.all([listTrees(), listSpecies()]);
   if (!ctx.alive()) return;
+  ctx.setActions(h("button", { class: "icon-btn labeled", title: "接收別人轉給你的盆栽", onclick: () => openReceive() }, [icon("inbox"), "接收"]));
   const content = h("div");
   el.replaceChildren(
     content,
-    h("button", { class: "fab", onclick: () => openTreeForm({ species, onSaved: goTree }) }, [icon("plus"), "新增樹"])
+    h("button", { class: "fab", onclick: () => openTreeForm({ species, onSaved: goTree }) }, [icon("plus"), "新增盆栽"])
   );
 
   const draw = () => {
@@ -37,15 +38,14 @@ export async function renderTrees(el, ctx) {
       archived.length && chip("archived", `已封存 ${archived.length}`),
     ]);
 
-    // 編號依建立順序（No.01 是第一棵），篩選後也維持原編號
-    const no = new Map([...trees].sort((a, b) => a.created_at.localeCompare(b.created_at)).map((t, i) => [t.id, i + 1]));
-    const grid = h("div", { class: "tree-grid" }, shown.map((t) => treeCard(t, no.get(t.id))));
+    const grid = h("div", { class: "tree-grid" }, shown.map(treeCard));
     const empty = !trees.length &&
       h("div", { class: "empty-hero" }, [
         enso(),
-        h("div", { class: "empty-title" }, "還沒有樹"),
-        h("p", {}, "先建立第一棵樹的樹檔，再幫它拍一組「初始紀錄」。"),
-        h("button", { class: "btn btn-primary", onclick: () => openTreeForm({ species, onSaved: goTree }) }, [icon("plus"), "建立第一棵樹"]),
+        h("div", { class: "empty-title" }, "還沒有盆栽"),
+        h("p", {}, "先建立第一盆盆栽的檔案，再幫它拍一組「初始紀錄」。"),
+        h("button", { class: "btn btn-primary", onclick: () => openTreeForm({ species, onSaved: goTree }) }, [icon("plus"), "建立第一盆盆栽"]),
+        h("button", { class: "btn", onclick: () => openReceive() }, [icon("inbox"), "接收別人轉給你的盆栽"]),
       ]);
 
     content.replaceChildren(...(trees.length ? [chips, grid] : [empty]));
@@ -57,12 +57,12 @@ export async function renderTrees(el, ctx) {
 
 const goTree = (t) => { location.hash = `#/tree/${t.id}`; };
 
-function treeCard(t, no) {
-  const meta = [t.code, t.species_name].filter(Boolean).join(" · ");
+function treeCard(t) {
+  const meta = [t.code, t.species_name, t.creator_count > 1 && `${t.creator_count} 代創作者`].filter(Boolean).join(" · ");
   return h("a", { class: "tree-card", href: `#/tree/${t.id}` }, [
     h("div", { class: "tree-cover" }, t.cover_thumb ? photoImg(t.cover_thumb) : h("span", { class: "cover-ph" }, enso())),
     h("div", { class: "tree-card-body" }, [
-      h("div", { class: "tree-no" }, `No.${String(no).padStart(2, "0")}`),
+      h("div", { class: "tree-no" }, t.uid),
       h("div", { class: "tree-name" }, t.name),
       meta && h("div", { class: "tree-meta" }, meta),
       h("div", { class: "tree-meta" }, t.entry_count
@@ -72,11 +72,11 @@ function treeCard(t, no) {
   ]);
 }
 
-// 新增／編輯樹檔（底部彈窗）
+// 新增／編輯盆栽檔案（底部彈窗）
 export function openTreeForm({ tree = null, species, onSaved }) {
   const v = (x) => x ?? "";
   const name = h("input", { type: "text", value: v(tree?.name), placeholder: "例：山採絲島一號" });
-  const code = h("input", { type: "text", value: v(tree?.code), placeholder: "例：JP-001" });
+  const code = h("input", { type: "text", value: v(tree?.code), placeholder: "選填，例：JP-001" });
 
   const NEW = "__new__";
   const speciesSel = h("select", {}, [
@@ -100,7 +100,7 @@ export function openTreeForm({ tree = null, species, onSaved }) {
   const note = h("textarea", { rows: "3", placeholder: "取得經過、樹況、創作方向…" }, v(tree?.note));
   const archived = h("input", { type: "checkbox", checked: tree?.status === "archived" });
 
-  sheet(tree ? "編輯樹檔" : "新增樹", (close) => {
+  sheet(tree ? "編輯盆栽檔案" : "新增盆栽", (close) => {
     const save = async (e) => {
       const btn = e.currentTarget;
       if (!name.value.trim()) { toast("請輸入名稱", "err"); name.focus(); return; }
@@ -135,14 +135,85 @@ export function openTreeForm({ tree = null, species, onSaved }) {
     };
     return h("div", {}, [
       field("名稱 *", name),
-      h("div", { class: "row" }, [field("編號", code), field("樹種", h("div", {}, [speciesSel, newSpecies]))]),
+      tree && field("身分證", h("div", { class: "uid-static" }, tree.uid), "系統產生，終身不變；轉移給別人也會跟著這盆盆栽。"),
+      h("div", { class: "row" }, [field("自訂編號", code), field("樹種", h("div", {}, [speciesSel, newSpecies]))]),
       h("div", { class: "row" }, [field("來源", source), field("取得日期", acquired)]),
       h("div", { class: "row" }, [field("取得時估計樹齡", estAge), field("盆器", pot)]),
       field("正面設定", frontNote),
       field("備註", note),
-      tree && h("label", { class: "check-row" }, [archived, h("span", {}, "封存（已送人、已枯死或不再追蹤）")]),
+      tree && h("label", { class: "check-row" }, [archived, h("span", {}, "封存（已枯死或不再追蹤；送人請用「轉移給他人」）")]),
       h("button", { class: "btn btn-primary btn-block", onclick: save }, "儲存"),
     ]);
   });
   if (!tree) setTimeout(() => name.focus(), 80);
+}
+
+// ---------- 接收盆栽：輸入對方給的轉移碼 ----------
+const normCode = (v) => {
+  const x = v.toUpperCase().replace(/[^0-9A-Z]/g, "").slice(0, 8);
+  return x.length > 4 ? `${x.slice(0, 4)}-${x.slice(4)}` : x;
+};
+
+export function openReceive(prefill = "") {
+  const input = h("input", {
+    type: "text", class: "code-input", value: normCode(prefill), placeholder: "XXXX-XXXX",
+    autocomplete: "off", autocapitalize: "characters", spellcheck: "false", inputmode: "text", "aria-label": "轉移碼",
+  });
+  input.addEventListener("input", () => { input.value = normCode(input.value); });
+  const result = h("div");
+
+  sheet("接收盆栽", (close) => {
+    const check = async (e) => {
+      const btn = e.currentTarget;
+      const code = normCode(input.value);
+      if (code.length !== 9) { toast("轉移碼是 8 碼，例如 7K3Q-M9PX", "err"); input.focus(); return; }
+      btn.disabled = true;
+      try {
+        const p = await previewTransfer(code);
+        result.replaceChildren(p ? previewCard(p, code, close) : h("div", { class: "notice err" }, "轉移碼無效、已過期或已經使用過，請跟對方確認。"));
+      } catch (err) {
+        toast("查詢失敗：" + err.message, "err");
+      } finally {
+        btn.disabled = false;
+      }
+    };
+    input.addEventListener("keydown", (e) => { if (e.key === "Enter") check({ currentTarget: lookup }); });
+    const lookup = h("button", { class: "btn btn-primary btn-block", onclick: check }, "查詢");
+    if (input.value.length === 9) setTimeout(() => lookup.click(), 0);
+    else setTimeout(() => input.focus(), 80);
+    return h("div", {}, [
+      h("p", { class: "sheet-msg" }, "輸入原創作者給你的 8 碼轉移碼。接收後，這盆盆栽和前人的紀錄、照片都會到你名下，接著由你記錄。"),
+      h("div", { class: "field" }, input),
+      lookup,
+      result,
+    ]);
+  });
+}
+
+function previewCard(p, code, close) {
+  const accept = async (e) => {
+    const btn = e.currentTarget;
+    btn.disabled = true;
+    const b = busy("接收中…");
+    try {
+      const id = await acceptTransfer(code);
+      close();
+      toast(`已接收「${p.name}」`, "ok");
+      location.hash = `#/tree/${id}`;
+    } catch (err) {
+      toast("接收失敗：" + err.message, "err");
+      btn.disabled = false;
+    } finally {
+      b.remove();
+    }
+  };
+  return h("div", { class: "transfer-preview" }, [
+    h("div", { class: "tp-uid" }, p.uid),
+    h("div", { class: "tp-name" }, p.name),
+    h("div", { class: "tp-meta" }, [p.species, `${p.entries} 筆紀錄`].filter(Boolean).join(" · ")),
+    h("div", { class: "kv-row" }, [h("span", { class: "k" }, "原創作者"), h("span", {}, p.from)]),
+    p.note && h("div", { class: "kv-row" }, [h("span", { class: "k" }, "方式"), h("span", {}, p.note)]),
+    h("div", { class: "kv-row" }, [h("span", { class: "k" }, "有效至"), h("span", {}, fmtDateTime(p.expires_at))]),
+    h("button", { class: "btn btn-primary btn-block", onclick: accept }, [icon("check"), "接收這盆盆栽"]),
+  ]);
 }

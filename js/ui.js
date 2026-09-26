@@ -120,6 +120,20 @@ export function fmtDate(d) {
   return `${y}.${m}.${day}`;
 }
 
+export function fmtDateTime(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const p = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}.${p(d.getMonth() + 1)}.${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+// 創作者顯示名稱：自己沒設定就顯示「你」，別人沒設定顯示「未命名創作者」
+export function creatorLabel(id, names, me) {
+  const n = (names[id] || "").trim();
+  if (id === me) return n ? `${n}（你）` : "你";
+  return n || "未命名創作者";
+}
+
 export function daysBetween(a, b) {
   const t = (d) => Date.UTC(...d.slice(0, 10).split("-").map((x, i) => (i === 1 ? x - 1 : +x)));
   return Math.round((t(b) - t(a)) / 86400000);
