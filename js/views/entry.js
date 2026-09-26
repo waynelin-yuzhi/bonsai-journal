@@ -1,6 +1,7 @@
 // 單筆紀錄：照片、作業、特徵、用材、備註
 import { getEntry, deleteEntry } from "../db.js";
-import { h, loading, photoImg, hydratePhotos, fmtDate, confirmDialog, busy, toast } from "../ui.js";
+import { h, loading, photoImg, hydratePhotos, fmtDate, confirmDialog, busy, toast, sectionTitle } from "../ui.js";
+import { icon } from "../icons.js";
 import { ANGLES, ANGLE_LABEL, VIGOR_LABEL } from "../constants.js";
 import { openViewer } from "../viewer.js";
 
@@ -12,7 +13,7 @@ export async function renderEntry(el, ctx) {
   const tree = e.trees;
   ctx.setTitle(tree.name);
   ctx.setParent(`#/tree/${tree.id}`);
-  ctx.setActions(h("a", { class: "icon-btn", href: `#/entry/${id}/edit`, title: "編輯" }, "✎"));
+  ctx.setActions(h("a", { class: "icon-btn", href: `#/entry/${id}/edit`, title: "編輯", "aria-label": "編輯紀錄" }, icon("edit")));
 
   // 五個角度依序，細節放後面
   const order = ANGLES.map((a) => a.key);
@@ -40,7 +41,7 @@ export async function renderEntry(el, ctx) {
     angled.length && h("div", { class: "photo-grid" }, angled.map((p) =>
       h("button", { class: "photo-cell", onclick: view(p) }, [photoImg(p.thumb_path), h("span", { class: "cell-label" }, ANGLE_LABEL[p.angle])])
     )),
-    details.length && h("div", { class: "section-title" }, "細節"),
+    details.length && sectionTitle("細節", "DETAILS"),
     details.length && h("div", { class: "detail-view" }, details.map((p) =>
       h("button", { class: "detail-view-row", onclick: view(p) }, [photoImg(p.thumb_path, { class: "thumb" }), h("span", {}, p.caption || "（無說明）")])
     )),

@@ -1,10 +1,10 @@
 // 拍照角度：五個固定角度 + 細節
 export const ANGLES = [
-  { key: "front", label: "正面" },
-  { key: "back", label: "背面" },
-  { key: "left", label: "左側" },
-  { key: "right", label: "右側" },
-  { key: "top", label: "俯視" },
+  { key: "front", label: "正面", en: "FRONT" },
+  { key: "back", label: "背面", en: "BACK" },
+  { key: "left", label: "左側", en: "LEFT" },
+  { key: "right", label: "右側", en: "RIGHT" },
+  { key: "top", label: "俯視", en: "TOP" },
 ];
 export const ANGLE_LABEL = { ...Object.fromEntries(ANGLES.map((a) => [a.key, a.label])), detail: "細節" };
 

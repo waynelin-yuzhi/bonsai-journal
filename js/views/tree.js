@@ -1,6 +1,7 @@
 // 單棵樹：樹檔資訊 + 時間軸
 import { getTree, listEntries, listSpecies, deleteTree } from "../db.js";
-import { h, loading, photoImg, hydratePhotos, fmtDate, daysBetween, durationText, confirmDialog, busy, toast } from "../ui.js";
+import { h, loading, photoImg, hydratePhotos, fmtDate, daysBetween, durationText, confirmDialog, busy, toast, sectionTitle } from "../ui.js";
+import { icon, enso } from "../icons.js";
 import { ANGLES } from "../constants.js";
 import { openTreeForm } from "./trees.js";
 import { openViewer } from "../viewer.js";
@@ -18,7 +19,7 @@ export async function renderTree(el, ctx) {
     const species = await listSpecies();
     openTreeForm({ tree, species, onSaved: () => renderTree(el, ctx) });
   };
-  ctx.setActions(h("button", { class: "icon-btn", title: "編輯樹檔", onclick: edit }, "✎"));
+  ctx.setActions(h("button", { class: "icon-btn", title: "編輯樹檔", "aria-label": "編輯樹檔", onclick: edit }, icon("edit")));
 
   // 封面：最新一張正面照（沒有就用最新任一張）
   const allPhotos = entries.flatMap((e) => e.photos);
@@ -38,7 +39,7 @@ export async function renderTree(el, ctx) {
   const header = h("div", { class: "tree-hero" }, [
     cover
       ? h("div", { class: "hero-cover", onclick: () => openViewer([{ path: cover.path, label: fmtDate(entries.find((e) => e.id === cover.entry_id)?.entry_date) }], 0) }, photoImg(cover.path))
-      : h("div", { class: "hero-cover empty-cover" }, "🌲"),
+      : h("div", { class: "hero-cover empty-cover" }, enso()),
     h("div", { class: "hero-body" }, [
       h("div", { class: "hero-title" }, [tree.name, tree.code && h("span", { class: "code" }, tree.code)]),
       facts.length && h("div", { class: "hero-facts" }, facts.join(" · ")),
@@ -51,12 +52,12 @@ export async function renderTree(el, ctx) {
   ]);
 
   const tools = h("div", { class: "row tools" }, [
-    h("a", { class: "btn", href: `#/tree/${id}/compare` }, "⇆ 前後對比"),
-    h("a", { class: "btn btn-primary", href: `#/tree/${id}/new` }, "＋ 新增紀錄"),
+    h("a", { class: "btn", href: `#/tree/${id}/compare` }, [icon("compare"), "前後對比"]),
+    h("a", { class: "btn btn-primary", href: `#/tree/${id}/new` }, [icon("plus"), "新增紀錄"]),
   ]);
 
   const timeline = entries.length
-    ? h("div", { class: "timeline" }, entries.map((e, i) => timelineItem(e, entries[i + 1])))
+    ? h("div", { class: "timeline" }, entries.map((e, i) => timelineItem(e, entries[i + 1], entries.length - i)))
     : h("div", { class: "empty" }, [
         h("p", {}, "還沒有紀錄。"),
         h("p", { class: "muted" }, "建議先拍一組正面、背面、左、右、俯視的「初始紀錄」，之後才有對照的基準。"),
@@ -80,18 +81,18 @@ export async function renderTree(el, ctx) {
     },
   }, "刪除這棵樹"));
 
-  el.replaceChildren(header, tools, h("div", { class: "section-title" }, "時間軸"), timeline, danger);
+  el.replaceChildren(header, tools, sectionTitle("時間軸", "TIMELINE"), timeline, danger);
   hydratePhotos(el);
 }
 
-function timelineItem(e, prev) {
+function timelineItem(e, prev, no) {
   const gap = prev ? daysBetween(prev.entry_date, e.entry_date) : null;
   const photos = [...e.photos].sort((a, b) => ANGLE_ORDER.indexOf(a.angle) - ANGLE_ORDER.indexOf(b.angle));
   return h("a", { class: "tl-item", href: `#/entry/${e.id}` }, [
     h("div", { class: "tl-dot" }),
     h("div", { class: "tl-card" }, [
       h("div", { class: "tl-head" }, [
-        h("span", { class: "tl-date" }, fmtDate(e.entry_date)),
+        h("span", {}, [h("span", { class: "tl-no" }, `#${String(no).padStart(2, "0")}`), h("span", { class: "tl-date" }, fmtDate(e.entry_date))]),
         gap != null && h("span", { class: "tl-gap" }, gap === 0 ? "同一天" : `距上次 ${gap} 天`),
       ]),
       e.operations.length && h("div", { class: "tags" }, e.operations.map((o) => h("span", { class: "tag" }, o))),

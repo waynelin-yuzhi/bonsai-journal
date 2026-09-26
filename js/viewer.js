@@ -1,5 +1,6 @@
 // 全螢幕看照片：左右滑動或點箭頭切換，點背景關閉
 import { h, photoImg, hydratePhotos } from "./ui.js";
+import { icon } from "./icons.js";
 
 // items: [{ path, label, caption }]
 export function openViewer(items, start = 0) {
@@ -7,8 +8,8 @@ export function openViewer(items, start = 0) {
   const img = h("img", { class: "viewer-img", alt: "" });
   const label = h("div", { class: "viewer-label" });
   const counter = h("div", { class: "viewer-counter" });
-  const prev = h("button", { class: "viewer-nav prev", "aria-label": "上一張", onclick: (e) => { e.stopPropagation(); go(-1); } }, "‹");
-  const next = h("button", { class: "viewer-nav next", "aria-label": "下一張", onclick: (e) => { e.stopPropagation(); go(1); } }, "›");
+  const prev = h("button", { class: "viewer-nav prev", "aria-label": "上一張", onclick: (e) => { e.stopPropagation(); go(-1); } }, icon("back"));
+  const next = h("button", { class: "viewer-nav next", "aria-label": "下一張", onclick: (e) => { e.stopPropagation(); go(1); } }, icon("forward"));
   const close = () => { overlay.remove(); document.removeEventListener("keydown", onKey); };
   let swiped = false;
   const overlay = h("div", { class: "viewer", onclick: (e) => {
@@ -16,7 +17,7 @@ export function openViewer(items, start = 0) {
     if (e.target === overlay) close();
   } }, [
     img, label, counter, prev, next,
-    h("button", { class: "viewer-close", "aria-label": "關閉", onclick: close }, "✕"),
+    h("button", { class: "viewer-close", "aria-label": "關閉", onclick: close }, icon("close")),
   ]);
 
   async function show() {

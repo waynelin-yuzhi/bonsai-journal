@@ -3,10 +3,11 @@ import {
   getTree, getEntry, listOperationTypes, opsForSpecies, addOperationType, treePhotos,
   saveEntry, uploadPhoto, updatePhoto, deletePhotos,
 } from "../db.js";
-import { h, field, loading, toast, busy, confirmDialog, promptDialog, photoImg, hydratePhotos, fmtDate, today } from "../ui.js";
+import { h, field, loading, toast, busy, confirmDialog, promptDialog, photoImg, hydratePhotos, fmtDate, today, sectionTitle } from "../ui.js";
 import { ANGLES, VIGOR_LABEL } from "../constants.js";
 import { prepareImage } from "../image.js";
 import { bindPhotoPicker } from "../picker.js";
+import { icon } from "../icons.js";
 
 export async function renderEntryForm(el, ctx) {
   const isEdit = ctx.mode === "edit";
@@ -86,13 +87,14 @@ export async function renderEntryForm(el, ctx) {
 
     const ref = refFor(a.key);
     let body;
-    if (s.prepared) body = [h("img", { src: s.preview, alt: a.label }), h("button", { class: "tile-x", onclick: clear }, "✕")];
-    else if (s.existing) body = [photoImg(s.existing.thumb_path, { alt: a.label }), h("button", { class: "tile-x", onclick: clear }, "✕")];
-    else if (ref) body = [photoImg(ref.thumb_path, { class: "ref", alt: "" }), h("span", { class: "tile-plus" }, "＋"), h("span", { class: "tile-ref" }, `上次 ${fmtDate(ref.entry_date).slice(5)}`)];
-    else body = [h("span", { class: "tile-plus" }, "＋")];
+    const x = () => h("button", { class: "tile-x", "aria-label": "移除照片", onclick: clear }, icon("close"));
+    if (s.prepared) body = [h("img", { src: s.preview, alt: a.label }), x()];
+    else if (s.existing) body = [photoImg(s.existing.thumb_path, { alt: a.label }), x()];
+    else if (ref) body = [photoImg(ref.thumb_path, { class: "ref", alt: "" }), h("span", { class: "tile-plus" }, icon("plus")), h("span", { class: "tile-ref" }, `上次 ${fmtDate(ref.entry_date).slice(5)}`)];
+    else body = [h("span", { class: "tile-plus" }, icon("plus"))];
 
     const tile = h("label", { class: "angle-tile" + (s.prepared || s.existing ? " filled" : "") }, [
-      ...body, h("span", { class: "tile-label" }, a.label), input,
+      ...body, h("span", { class: "tile-label" }, [h("b", {}, a.en), h("span", {}, a.label)]), input,
     ]);
     bindPhotoPicker(tile, input);
     return tile;
@@ -114,7 +116,7 @@ export async function renderEntryForm(el, ctx) {
           if (x.preview) URL.revokeObjectURL(x.preview);
           touch();
           drawDetails();
-        } }, "✕"),
+        } }, icon("close")),
       ]);
     }));
     hydratePhotos(detailList);
@@ -167,7 +169,7 @@ export async function renderEntryForm(el, ctx) {
         selectedOps.add(n);
         touch();
         drawOps();
-      } }, "＋ 自訂"),
+      } }, [icon("plus"), "自訂"]),
     );
   };
   drawOps();
@@ -282,21 +284,21 @@ export async function renderEntryForm(el, ctx) {
 
   el.replaceChildren(
     h("div", { class: "card" }, [field("日期", date)]),
-    h("div", { class: "section-title" }, "照片"),
+    sectionTitle("照片", "PHOTOS"),
     h("div", { class: "card" }, [
       angleGrid,
       h("div", { class: "hint" }, "淡色的是上次同角度的照片，拍照時盡量對齊，時間軸才比得出變化。"),
       h("div", { class: "subhead" }, "細節"),
       detailList,
       (() => {
-        const btn = h("label", { class: "btn btn-sm btn-outline" }, ["＋ 加細節照片", detailInput]);
+        const btn = h("label", { class: "btn btn-sm btn-outline" }, [icon("plus"), "加細節照片", detailInput]);
         bindPhotoPicker(btn, detailInput);
         return btn;
       })(),
     ]),
-    h("div", { class: "section-title" }, "做了哪些事"),
+    sectionTitle("做了哪些事", "WORK"),
     h("div", { class: "card" }, opsBox),
-    h("div", { class: "section-title" }, "備註"),
+    sectionTitle("備註", "NOTES"),
     h("div", { class: "card" }, [
       note,
       h("div", { class: "row" }, [field("下次預計", nextAction), field("預計日期", nextDate)]),

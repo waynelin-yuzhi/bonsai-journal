@@ -1,6 +1,7 @@
 // 輕量 UI 工具：DOM 建構、Toast、底部彈窗、進度、日期格式
 
 import { signedUrls } from "./db.js";
+import { enso } from "./icons.js";
 
 export function h(tag, attrs = {}, children = []) {
   const el = document.createElement(tag);
@@ -30,7 +31,7 @@ export function toast(msg, type = "") {
 // 畫面中央的轉圈彈窗，文字可即時更新（例如「上傳照片 2/6」）
 export function busy(msg) {
   const text = h("div", { class: "busy-text" }, msg);
-  const overlay = h("div", { class: "busy-overlay" }, h("div", { class: "busy-card" }, [h("div", { class: "spinner" }), text]));
+  const overlay = h("div", { class: "busy-overlay" }, h("div", { class: "busy-card" }, [h("div", { class: "spinner" }, enso()), text]));
   document.getElementById("modal-root").append(overlay);
   return {
     update(m) { text.textContent = m; },
@@ -81,6 +82,11 @@ export function promptDialog(title, placeholder = "") {
   });
 }
 
+// 段落標題：中文明體＋英文小標，例：sectionTitle("照片", "PHOTOS")
+export function sectionTitle(zh, en) {
+  return h("div", { class: "section-title" }, [h("span", {}, zh), en && h("span", { class: "en" }, en)]);
+}
+
 export function field(label, inputEl, hint) {
   return h("div", { class: "field" }, [h("label", {}, label), inputEl, hint && h("div", { class: "hint" }, hint)]);
 }
@@ -111,7 +117,7 @@ export const today = () => new Date().toLocaleDateString("sv-SE"); // YYYY-MM-DD
 export function fmtDate(d) {
   if (!d) return "";
   const [y, m, day] = d.slice(0, 10).split("-");
-  return `${y}/${m}/${day}`;
+  return `${y}.${m}.${day}`;
 }
 
 export function daysBetween(a, b) {

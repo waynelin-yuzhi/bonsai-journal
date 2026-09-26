@@ -1,13 +1,13 @@
 {
   "id": "./",
-  "name": "盆栽創作紀錄",
-  "short_name": "盆栽紀錄",
-  "description": "記錄盆栽每一次的修剪、蟠扎與換盆，用時間軸回顧完整的創作過程",
+  "name": "Bonsai Journal",
+  "short_name": "Bonsai Journal",
+  "description": "Bonsai Journal 盆栽創作紀錄：記錄每一次修剪、蟠扎與換盆，用時間軸回顧完整的創作過程",
   "lang": "zh-Hant-TW",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#f4f2ec",
-  "theme_color": "#34503b",
+  "background_color": "#F2EEE5",
+  "theme_color": "#F2EEE5",
   "orientation": "portrait",
   "icons": [
     {
