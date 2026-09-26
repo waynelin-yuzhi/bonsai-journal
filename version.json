@@ -1,8 +1,7 @@
 {
-  "version": "1.2.0",
+  "version": "1.2.1",
   "date": "2026-09-26",
   "notes": [
-    "全新介面：日式禪意風格",
-    "App 名稱改為 Bonsai Journal，圖示全面更新"
+    "新增：Android App 有新版安裝檔時自動通知"
   ]
 }

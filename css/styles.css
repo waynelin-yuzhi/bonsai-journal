@@ -439,3 +439,4 @@ details.more[open] > summary { margin-bottom: 14px; }
 .install-banner .grow { flex: 1; min-width: 0; font-size: 14px; }
 .install-banner .sub { font-size: 12px; color: var(--stone); }
 body.no-tabs .install-banner { bottom: calc(88px + var(--safe-b)); }
+.apk-banner { top: calc(70px + var(--safe-t)); bottom: auto; z-index: 45; }

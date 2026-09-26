@@ -8,7 +8,8 @@ import { icon, enso } from "../icons.js";
 import { ANGLE_LABEL, VIGOR_LABEL } from "../constants.js";
 import { runningVersion, checkForUpdate } from "../update.js";
 import { isStandalone, canInstall, isIOS, promptInstall, onInstallChange } from "../install.js";
-import { isNativeApp, WEB_URL } from "../platform.js";
+import { isNativeApp, nativeBuild, WEB_URL, APK_URL } from "../platform.js";
+import { checkApkUpdate, versionName } from "../apk-update.js";
 
 export async function renderSettings(el, ctx) {
   el.append(loading());
@@ -107,13 +108,17 @@ export async function renderSettings(el, ctx) {
 }
 
 // ---------- 安裝 App ----------
-const APK_URL = "https://github.com/waynelin-yuzhi/bonsai-journal/releases/latest/download/bonsai-journal.apk";
 
 function installCard() {
   const card = h("div", { class: "card" });
   const draw = () => {
-    if (isStandalone()) {
-      card.replaceChildren(h("div", { class: "install-state" }, [icon("check"), isNativeApp() ? "正在使用 Android App" : "已安裝，正在以 App 模式使用"]));
+    if (isNativeApp()) {
+      card.replaceChildren(
+        h("div", { class: "install-state" }, [icon("check"), `正在使用 Android App ${versionName(nativeBuild())}`]),
+        h("button", { class: "btn btn-block", onclick: () => checkApkUpdate({ manual: true }) }, [icon("refresh"), "檢查 App 更新"]),
+      );
+    } else if (isStandalone()) {
+      card.replaceChildren(h("div", { class: "install-state" }, [icon("check"), "已安裝，正在以 App 模式使用"]));
     } else if (canInstall()) {
       card.replaceChildren(
         h("p", { class: "muted" }, "安裝後會出現在手機桌面和 App 列表，開啟時全螢幕、沒有網址列。"),
