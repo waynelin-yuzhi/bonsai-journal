@@ -180,6 +180,10 @@ body.no-tabs .tabbar { display: none; }
 .chip.static { cursor: default; display: inline-flex; align-items: center; gap: 6px; border-color: var(--ink); color: var(--ink); }
 .chip.static.sys { border-color: var(--line); color: var(--stone); }
 .chip-x { border: none; background: none; color: inherit; padding: 0; cursor: pointer; display: inline-flex; opacity: .7; }
+.chip .ico { width: 13px; height: 13px; opacity: .55; margin-left: 6px; vertical-align: -1px; }
+/* 第二排篩選：柏／松選樹種，雜木選花果／落葉／常綠 */
+.chips.sub { margin-top: -6px; padding-left: 12px; border-left: 1px solid var(--ink); }
+.chips.sub .chip { padding: 4px 12px; font-size: 13px; }
 .chip-x .ico { width: 13px; height: 13px; }
 
 .empty { text-align: center; color: var(--stone); padding: 44px 12px; }
@@ -218,6 +222,8 @@ body.no-tabs .tabbar { display: none; }
 textarea { resize: vertical; line-height: 1.7; }
 .field input:focus, .field select:focus, textarea:focus, input:focus, select:focus { outline: none; border-bottom-color: var(--ink); }
 .field select + input { margin-top: 8px; }
+.new-species { display: flex; gap: 10px; margin-top: 8px; }
+.new-species select { flex: 0 0 42%; }
 .hint { font-size: 12px; color: var(--stone); margin-top: 8px; line-height: 1.6; }
 .hint.center { text-align: center; }
 .check-row { display: flex; align-items: center; gap: 10px; margin: 6px 0 10px; font-size: 13px; color: var(--ink-2); }

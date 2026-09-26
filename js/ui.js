@@ -127,6 +127,18 @@ export function fmtDateTime(iso) {
   return `${d.getFullYear()}.${p(d.getMonth() + 1)}.${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 
+// 盆栽顯示名稱：名稱選填，沒取名就用樹種
+export function treeTitle(t) {
+  return t?.name?.trim() || t?.species_name || t?.species?.name || "未命名盆栽";
+}
+
+// 分類＋樹種的短標籤：柏・真柏、花果・梅
+export function speciesTag(t) {
+  const name = t?.species_name ?? t?.species?.name;
+  const cat = t?.species_category ?? t?.species?.category;
+  return [cat, name].filter(Boolean).join("・");
+}
+
 // 創作者顯示名稱：自己沒設定就顯示「你」，別人沒設定顯示「未命名創作者」
 export function creatorLabel(id, names, me) {
   const n = (names[id] || "").trim();

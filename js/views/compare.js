@@ -1,6 +1,6 @@
 // 前後對比：同一角度選兩個日期，拖曳分隔線比較；也可以依時間順序播放（縮時）
 import { getTree, treePhotos, signedUrls } from "../db.js";
-import { h, loading, fmtDate } from "../ui.js";
+import { h, loading, fmtDate, treeTitle } from "../ui.js";
 import { icon } from "../icons.js";
 import { ANGLES } from "../constants.js";
 
@@ -9,7 +9,7 @@ export async function renderCompare(el, ctx) {
   el.append(loading());
   const [tree, photos] = await Promise.all([getTree(treeId), treePhotos(treeId)]);
   if (!ctx.alive()) return;
-  ctx.setTitle(`前後對比 · ${tree.name}`);
+  ctx.setTitle(`前後對比 · ${treeTitle(tree)}`);
 
   const byAngle = Object.fromEntries(ANGLES.map((a) => [a.key, photos.filter((p) => p.angle === a.key)]));
   const usable = ANGLES.filter((a) => byAngle[a.key].length >= 2);

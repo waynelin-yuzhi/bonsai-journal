@@ -1,6 +1,6 @@
 // 最近紀錄：所有盆栽的紀錄依日期排列，按月份分組
 import { recentEntries } from "../db.js";
-import { h, loading, photoImg, hydratePhotos, fmtDate, sectionTitle } from "../ui.js";
+import { h, loading, photoImg, hydratePhotos, fmtDate, sectionTitle, treeTitle } from "../ui.js";
 import { enso } from "../icons.js";
 
 export async function renderRecent(el, ctx) {
@@ -28,7 +28,7 @@ export async function renderRecent(el, ctx) {
       return h("a", { class: "list-item", href: `#/entry/${e.id}` }, [
         cover ? photoImg(cover.thumb_path, { class: "thumb" }) : h("span", { class: "thumb ph" }, enso()),
         h("div", { class: "grow" }, [
-          h("div", { class: "title" }, e.trees?.name || ""),
+          h("div", { class: "title" }, treeTitle(e.trees)),
           h("div", { class: "sub" }, [fmtDate(e.entry_date), e.photos.length > 0 && ` · ${e.photos.length} 張照片`]),
           e.operations.length && h("div", { class: "tags" }, e.operations.map((o) => h("span", { class: "tag" }, o))),
         ]),

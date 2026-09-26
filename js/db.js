@@ -1,5 +1,6 @@
 // 所有資料讀寫集中在這裡
 import { supabase } from "./supabase.js";
+import { groupOf } from "./constants.js";
 
 const BUCKET = "photos";
 
@@ -20,8 +21,12 @@ export async function listSpecies() {
   return unwrap(await supabase.from("species").select("*").order("sort").order("created_at"));
 }
 
-export async function addSpecies(name) {
-  return unwrap(await supabase.from("species").insert({ name, owner_id: await uid(), sort: 500 }).select().single());
+export async function addSpecies(name, category) {
+  return unwrap(await supabase.from("species").insert({ name, category, owner_id: await uid(), sort: 500 }).select().single());
+}
+
+export async function updateSpecies(id, fields) {
+  return unwrap(await supabase.from("species").update(fields).eq("id", id).select().single());
 }
 
 export async function deleteSpecies(id) {
@@ -32,10 +37,11 @@ export async function listOperationTypes() {
   return unwrap(await supabase.from("operation_types").select("*").order("sort").order("created_at"));
 }
 
-export async function addOperationType(name, speciesId = null) {
+// scope：{ speciesId } 樹種專屬、{ category } 分類適用、都沒有＝共用
+export async function addOperationType(name, { speciesId = null, category = null } = {}) {
   return unwrap(
     await supabase.from("operation_types")
-      .insert({ name, species_id: speciesId, owner_id: await uid(), sort: 500 })
+      .insert({ name, species_id: speciesId, category: speciesId ? null : category, owner_id: await uid(), sort: 500 })
       .select().single()
   );
 }
@@ -44,12 +50,14 @@ export async function deleteOperationType(id) {
   unwrap(await supabase.from("operation_types").delete().eq("id", id));
 }
 
-// 某樹種可用的作業：共用 + 該樹種專屬（名稱去重，保留排序）
-export function opsForSpecies(opTypes, speciesId) {
+// 某樹種可用的作業：共用 → 分類適用（含雜木）→ 該樹種專屬（名稱去重，保留排序）
+export function opsForSpecies(opTypes, speciesId, category) {
   const seen = new Set();
+  const cats = category ? [category, groupOf(category)] : [];
+  const level = (o) => (o.species_id ? 2 : o.category ? 1 : 0);
   return opTypes
-    .filter((o) => !o.species_id || o.species_id === speciesId)
-    .sort((a, b) => (!!a.species_id - !!b.species_id) || a.sort - b.sort)
+    .filter((o) => (o.species_id ? o.species_id === speciesId : !o.category || cats.includes(o.category)))
+    .sort((a, b) => level(a) - level(b) || a.sort - b.sort)
     .filter((o) => (seen.has(o.name) ? false : seen.add(o.name)));
 }
 
@@ -78,7 +86,7 @@ export async function deleteTree(id) {
 
 // ---------- 紀錄 ----------
 const PHOTOS = "photos!photos_entry_id_fkey(*)";
-const TREE = "trees!entries_tree_id_fkey(id, uid, name, code, species_id)";
+const TREE = "trees!entries_tree_id_fkey(id, uid, name, code, species_id, species(name, category))";
 
 const sortPhotos = (e) => {
   e.photos?.sort((a, b) => a.sort - b.sort || a.created_at.localeCompare(b.created_at));
