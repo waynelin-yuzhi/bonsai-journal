@@ -351,3 +351,15 @@ details.more[open] > summary { margin-bottom: 12px; }
 .btn-light { background: #fff; color: var(--pine-d); }
 .btn-ghost-light { background: transparent; color: #dfe8df; }
 .row-actions { display: flex; gap: 6px; flex: 0 0 auto; }
+
+/* ---------- 安裝成 App 提示 ---------- */
+.install-banner {
+  position: fixed; left: 12px; right: 12px; bottom: calc(68px + var(--safe-b)); z-index: 40;
+  max-width: 520px; margin: 0 auto; padding: 10px 12px; border-radius: var(--radius);
+  background: #fff; box-shadow: 0 8px 28px rgba(0,0,0,.18); border: 1px solid var(--border);
+  display: flex; align-items: center; gap: 10px; animation: fade .25s;
+}
+.install-banner img { width: 40px; height: 40px; border-radius: 10px; }
+.install-banner .grow { flex: 1; min-width: 0; font-size: 14px; }
+.install-banner .sub { font-size: 12px; color: var(--muted); }
+body.no-tabs .install-banner { bottom: calc(84px + var(--safe-b)); }

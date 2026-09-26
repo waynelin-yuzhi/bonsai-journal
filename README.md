@@ -72,17 +72,20 @@ icons/                  App 圖示
 
 打開 `js/config.js`，把 Project URL 和 Publishable key 填進去。Publishable key 本來就是公開用的，資料安全由 RLS 把關。
 
-### 3. 部署到 Cloudflare Pages（HTTPS，手機相機需要）
+### 3. 部署（GitHub Pages）
 
-1. 到 [dash.cloudflare.com](https://dash.cloudflare.com) → **Workers & Pages** → **Create** → **Pages** → **Connect to Git**
-2. 授權 GitHub，選 `bonsai-journal`
-3. Framework preset：`None`；Build command：留空；Build output directory：`/`
-4. **Save and Deploy**，完成後會拿到一個 `https://bonsai-journal-xxx.pages.dev` 網址
-5. 之後每次 `main` 有更新，Cloudflare 會自動重新部署
+1. repo 設為公開（裡面沒有機密；資料由 Supabase RLS 保護）
+2. **Settings → Pages** → Source：Deploy from a branch → Branch：`main`、`/ (root)` → Save
+3. 網址：https://waynelin-yuzhi.github.io/bonsai-journal/ ，之後 `main` 有更新就會自動重新上線
 
 ### 4. 手機使用
 
-用手機瀏覽器打開網址 → 登入 → 分享選單 **加入主畫面**，就會像 App 一樣全螢幕開啟。
+- **Android App（APK）**：用手機打開 https://github.com/waynelin-yuzhi/bonsai-journal/releases/latest/download/bonsai-journal.apk 下載安裝
+  - 第一次安裝時，Android 會詢問是否允許「安裝不明來源的應用程式」，允許即可
+  - App 是開啟線上版的外殼（`android-app/`，Capacitor），一般改版不用重新安裝；只有 `android-app/` 改變時，GitHub Actions 才會重新打包並發佈到 Releases
+  - 在 App 裡點照片會先選「拍照」或「從相簿選」；匯出備份需用瀏覽器開網頁版
+  - 簽名用 `android-app/keystore/debug.keystore`（測試用金鑰，不是機密）；日後要上架 Google Play 時，改用私人金鑰並存在 GitHub Secrets
+- **其他方式**：Chrome 開啟網址時會跳出「安裝成 App」提示；iPhone 用 Safari 分享選單「加入主畫面」
 
 > 本機測試：在專案根目錄執行 `python3 -m http.server 8000`，用 `http://localhost:8000` 開啟。
 

@@ -3,6 +3,10 @@ import { supabase } from "./supabase.js";
 import { startRouter } from "./router.js";
 import { toast } from "./ui.js";
 import { startUpdateCheck } from "./update.js";
+import { initInstall } from "./install.js";
+
+// 要在頁面一開始就監聽，Chrome 的安裝事件可能很早就發出
+initInstall();
 
 const authScreen = document.getElementById("auth-screen");
 const app = document.getElementById("app");

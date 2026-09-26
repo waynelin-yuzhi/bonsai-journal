@@ -6,6 +6,7 @@ import {
 import { h, field, loading, toast, busy, confirmDialog, promptDialog, photoImg, hydratePhotos, fmtDate, today } from "../ui.js";
 import { ANGLES, VIGOR_LABEL } from "../constants.js";
 import { prepareImage } from "../image.js";
+import { bindPhotoPicker } from "../picker.js";
 
 export async function renderEntryForm(el, ctx) {
   const isEdit = ctx.mode === "edit";
@@ -93,6 +94,7 @@ export async function renderEntryForm(el, ctx) {
     const tile = h("label", { class: "angle-tile" + (s.prepared || s.existing ? " filled" : "") }, [
       ...body, h("span", { class: "tile-label" }, a.label), input,
     ]);
+    bindPhotoPicker(tile, input);
     return tile;
   };
   drawAngles();
@@ -286,7 +288,11 @@ export async function renderEntryForm(el, ctx) {
       h("div", { class: "hint" }, "淡色的是上次同角度的照片，拍照時盡量對齊，時間軸才比得出變化。"),
       h("div", { class: "subhead" }, "細節"),
       detailList,
-      h("label", { class: "btn btn-sm btn-outline" }, ["＋ 加細節照片", detailInput]),
+      (() => {
+        const btn = h("label", { class: "btn btn-sm btn-outline" }, ["＋ 加細節照片", detailInput]);
+        bindPhotoPicker(btn, detailInput);
+        return btn;
+      })(),
     ]),
     h("div", { class: "section-title" }, "做了哪些事"),
     h("div", { class: "card" }, opsBox),

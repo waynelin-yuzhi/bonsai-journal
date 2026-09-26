@@ -6,6 +6,8 @@ import {
 import { h, loading, toast, busy, confirmDialog, sheet, field, today } from "../ui.js";
 import { ANGLE_LABEL, VIGOR_LABEL } from "../constants.js";
 import { runningVersion, checkForUpdate } from "../update.js";
+import { isStandalone, canInstall, isIOS, promptInstall, onInstallChange } from "../install.js";
+import { isNativeApp, WEB_URL } from "../platform.js";
 
 export async function renderSettings(el, ctx) {
   el.append(loading());
@@ -79,10 +81,15 @@ export async function renderSettings(el, ctx) {
     h("div", { class: "section-title" }, "作業項目"),
     opsCard,
     h("div", { class: "section-title" }, "資料備份"),
-    h("div", { class: "card" }, [
-      h("p", { class: "muted" }, "把所有樹檔、紀錄和照片原檔打包成一個 ZIP 下載，裡面附一份可用 Excel 開啟的紀錄表。"),
-      h("button", { class: "btn btn-primary btn-block", onclick: exportZip }, "⬇ 匯出備份"),
-    ]),
+    h("div", { class: "card" }, isNativeApp()
+      // Android App 裡沒辦法下載檔案，請改用瀏覽器開啟網頁版匯出
+      ? [h("p", { class: "muted" }, "App 內無法下載檔案。請用 Chrome 打開網頁版，登入後到「設定 → 匯出備份」："), h("p", {}, WEB_URL)]
+      : [
+          h("p", { class: "muted" }, "把所有樹檔、紀錄和照片原檔打包成一個 ZIP 下載，裡面附一份可用 Excel 開啟的紀錄表。"),
+          h("button", { class: "btn btn-primary btn-block", onclick: exportZip }, "⬇ 匯出備份"),
+        ]),
+    h("div", { class: "section-title" }, "安裝 App"),
+    installCard(),
     h("div", { class: "section-title" }, "版本"),
     (() => {
       const v = runningVersion();
@@ -96,6 +103,34 @@ export async function renderSettings(el, ctx) {
     })(),
     h("div", { class: "about" }, "盆栽創作紀錄"),
   );
+}
+
+// ---------- 安裝 App ----------
+const APK_URL = "https://github.com/waynelin-yuzhi/bonsai-journal/releases/latest/download/bonsai-journal.apk";
+
+function installCard() {
+  const card = h("div", { class: "card" });
+  const draw = () => {
+    if (isStandalone()) {
+      card.replaceChildren(h("div", {}, isNativeApp() ? "✓ 正在使用 Android App" : "✓ 已安裝，正在以 App 模式使用"));
+    } else if (canInstall()) {
+      card.replaceChildren(
+        h("p", { class: "muted" }, "安裝後會出現在手機桌面和 App 列表，開啟時全螢幕、沒有網址列。"),
+        h("button", { class: "btn btn-primary btn-block", onclick: promptInstall }, "安裝到手機"),
+      );
+    } else if (isIOS()) {
+      card.replaceChildren(h("p", { class: "muted" }, "iPhone：用 Safari 開啟本頁 → 分享按鈕 →「加入主畫面」。"));
+    } else {
+      card.replaceChildren(
+        h("p", { class: "muted" }, "Android 可以直接下載安裝檔（APK）："),
+        h("a", { class: "btn btn-primary btn-block", href: APK_URL }, "⬇ 下載 Android App"),
+        h("p", { class: "hint" }, "或用 Chrome 右上角選單 →「安裝應用程式」。"),
+      );
+    }
+  };
+  draw();
+  onInstallChange(() => { if (card.isConnected) draw(); });
+  return card;
 }
 
 // ---------- 修改密碼 ----------
