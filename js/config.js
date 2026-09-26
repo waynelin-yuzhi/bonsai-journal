@@ -4,8 +4,8 @@
 //   SUPABASE_ANON_KEY：Publishable key（sb_publishable_…）或舊版 anon key
 //   這把 key 可以公開，資料安全由資料庫的 RLS 權限規則把關。
 // ============================================================
-export const SUPABASE_URL = "https://YOUR-PROJECT.supabase.co";
-export const SUPABASE_ANON_KEY = "YOUR-ANON-KEY";
+export const SUPABASE_URL = "https://ushsdaqxgbhzpgkbuhed.supabase.co";
+export const SUPABASE_ANON_KEY = "sb_publishable_ljTSTLpQQUCmUL6A9W7auQ_CszdJP2P";
 
 export const isConfigured = () =>
   SUPABASE_URL.startsWith("https://") &&
