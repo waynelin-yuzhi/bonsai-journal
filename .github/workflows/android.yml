@@ -37,6 +37,9 @@ jobs:
 
       - name: 產生 Android 專案
         run: |
+          # 把打包編號寫進 User-Agent，App 才知道自己是第幾版、有沒有新版可以下載
+          sed -i 's#"appendUserAgent": "BonsaiJournalApp"#"appendUserAgent": "BonsaiJournalApp/${{ github.run_number }}"#' capacitor.config.json
+          grep -q "BonsaiJournalApp/${{ github.run_number }}" capacitor.config.json
           npx cap add android
           # App 圖示
           cp -r res/. android/app/src/main/res/

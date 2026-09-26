@@ -3,6 +3,7 @@ import { supabase } from "./supabase.js";
 import { startRouter } from "./router.js";
 import { toast } from "./ui.js";
 import { startUpdateCheck } from "./update.js";
+import { startApkUpdateCheck } from "./apk-update.js";
 import { initInstall } from "./install.js";
 import { hydrateIcons } from "./icons.js";
 
@@ -80,3 +81,4 @@ if ("serviceWorker" in navigator) {
 
 init();
 startUpdateCheck();
+startApkUpdateCheck();
