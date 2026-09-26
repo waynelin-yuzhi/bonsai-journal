@@ -1,7 +1,7 @@
-// 設定：帳號、樹種與作業項目管理、匯出備份
+// 設定：帳號與創作者名稱、樹種與作業項目管理、匯出備份
 import {
   listSpecies, addSpecies, deleteSpecies, listOperationTypes, addOperationType, deleteOperationType,
-  currentEmail, signOut, changePassword, exportData, downloadPhoto,
+  currentEmail, signOut, changePassword, exportData, downloadPhoto, getMyProfile, saveMyProfile, creatorNames, myId,
 } from "../db.js";
 import { h, loading, toast, busy, confirmDialog, sheet, field, today, sectionTitle } from "../ui.js";
 import { icon, enso } from "../icons.js";
@@ -13,7 +13,7 @@ import { checkApkUpdate, versionName } from "../apk-update.js";
 
 export async function renderSettings(el, ctx) {
   el.append(loading());
-  const [email, species, opTypes] = await Promise.all([currentEmail(), listSpecies(), listOperationTypes()]);
+  const [email, species, opTypes, profile] = await Promise.all([currentEmail(), listSpecies(), listOperationTypes(), getMyProfile()]);
   if (!ctx.alive()) return;
   const refresh = () => { el.replaceChildren(); renderSettings(el, ctx); };
 
@@ -23,7 +23,7 @@ export async function renderSettings(el, ctx) {
     h("div", { class: "chips wrap" }, species.map((s) => h("span", { class: "chip static" + (s.owner_id ? "" : " sys") }, [
       s.name,
       s.owner_id && h("button", { class: "chip-x", "aria-label": "刪除", onclick: async () => {
-        if (!(await confirmDialog(`刪除樹種「${s.name}」？`, "使用這個樹種的樹會變成「未指定」，它專屬的作業項目也會一起刪除。", "刪除"))) return;
+        if (!(await confirmDialog(`刪除樹種「${s.name}」？`, "使用這個樹種的盆栽會變成「未指定」，它專屬的作業項目也會一起刪除。", "刪除"))) return;
         try { await deleteSpecies(s.id); refresh(); } catch (err) { toast("刪除失敗：" + err.message, "err"); }
       } }, icon("close")),
     ]))),
@@ -73,6 +73,12 @@ export async function renderSettings(el, ctx) {
     sectionTitle("帳號", "ACCOUNT"),
     h("div", { class: "card" }, [
       h("div", { class: "account" }, email),
+      h("div", { class: "kv-row creator-row" }, [
+        h("span", { class: "k" }, "創作者名稱"),
+        h("span", {}, profile?.display_name?.trim() || h("span", { class: "muted" }, "尚未設定")),
+        h("button", { class: "btn btn-sm", onclick: () => openNameForm(profile?.display_name || "", refresh) }, [icon("edit"), "修改"]),
+      ]),
+      h("div", { class: "hint" }, "盆栽轉移後，對方的傳承紀錄和時間軸會顯示這個名稱。"),
       h("div", { class: "row-actions" }, [
         h("button", { class: "btn btn-sm", onclick: openPasswordForm }, [icon("key"), "修改密碼"]),
         h("button", { class: "btn btn-sm", onclick: signOut }, [icon("logout"), "登出"]),
@@ -87,7 +93,7 @@ export async function renderSettings(el, ctx) {
       // Android App 裡沒辦法下載檔案，請改用瀏覽器開啟網頁版匯出
       ? [h("p", { class: "muted" }, "App 內無法下載檔案。請用 Chrome 打開網頁版，登入後到「設定 → 匯出備份」："), h("p", {}, WEB_URL)]
       : [
-          h("p", { class: "muted" }, "把所有樹檔、紀錄和照片原檔打包成一個 ZIP 下載，裡面附一份可用 Excel 開啟的紀錄表。"),
+          h("p", { class: "muted" }, "把所有盆栽檔案、紀錄和照片原檔打包成一個 ZIP 下載，裡面附一份可用 Excel 開啟的紀錄表。"),
           h("button", { class: "btn btn-primary btn-block", onclick: exportZip }, [icon("download"), "匯出備份"]),
         ]),
     sectionTitle("安裝 App", "INSTALL"),
@@ -139,6 +145,30 @@ function installCard() {
   return card;
 }
 
+// ---------- 創作者名稱 ----------
+function openNameForm(current, onSaved) {
+  const input = h("input", { type: "text", maxlength: "40", value: current, placeholder: "例：韋恩、有植 YUZHIPLANT" });
+  sheet("創作者名稱", (close) => h("div", {}, [
+    field("名稱", input, "最多 40 字。"),
+    h("button", { class: "btn btn-primary btn-block", onclick: async (e) => {
+      const btn = e.currentTarget;
+      const v = input.value.trim();
+      if (!v) { toast("請輸入名稱", "err"); input.focus(); return; }
+      btn.disabled = true;
+      try {
+        await saveMyProfile(v);
+        close();
+        toast("已更新", "ok");
+        onSaved();
+      } catch (err) {
+        toast("更新失敗：" + err.message, "err");
+        btn.disabled = false;
+      }
+    } }, "儲存"),
+  ]));
+  setTimeout(() => input.focus(), 80);
+}
+
 // ---------- 修改密碼 ----------
 function openPasswordForm() {
   const pw = h("input", { type: "password", autocomplete: "new-password", placeholder: "至少 8 碼" });
@@ -170,13 +200,16 @@ async function exportZip() {
   const b = busy("讀取資料…");
   try {
     const { default: JSZip } = await import("https://esm.sh/jszip@3.10.1");
-    const { trees, entries, photos, species, opTypes } = await exportData();
+    const { trees, entries, photos, species, opTypes, lineage } = await exportData();
+    const [names, me, email] = await Promise.all([creatorNames([...entries.map((e) => e.owner_id), ...lineage.map((c) => c.owner_id)]), myId(), currentEmail()]);
+    // 備份檔裡自己沒設定名稱就用 Email
+    const who = (id) => names[id]?.trim() || (id === me ? email : "未命名創作者");
     const zip = new JSZip();
     const treeById = Object.fromEntries(trees.map((t) => [t.id, t]));
     const entryById = Object.fromEntries(entries.map((e) => [e.id, e]));
-    const folder = (t) => safe([t.code, t.name].filter(Boolean).join("_"));
+    const folder = (t) => safe([t.uid, t.code, t.name].filter(Boolean).join("_"));
 
-    // 照片原檔：photos/樹/日期_角度_序號.jpg
+    // 照片原檔：photos/身分證_編號_名稱/日期_角度_序號.jpg
     const files = {};
     const counter = {};
     for (const [i, p] of photos.entries()) {
@@ -196,16 +229,17 @@ async function exportZip() {
       exported_at: new Date().toISOString(),
       trees, entries,
       photos: photos.map((p) => ({ ...p, file: files[p.id] || null })),
+      lineage: lineage.map((c) => ({ ...c, creator: who(c.owner_id) })),
       custom_species: species.filter((s) => s.owner_id),
       custom_operation_types: opTypes.filter((o) => o.owner_id),
     }, null, 2));
 
-    const head = ["樹名", "編號", "樹種", "日期", "作業項目", "備註", "下次預計", "預計日期", "樹高cm", "幅寬cm", "幹徑cm", "樹勢", "線材", "用土", "肥料／藥劑", "照片數"];
+    const head = ["身分證", "盆栽名稱", "自訂編號", "樹種", "作者", "日期", "作業項目", "備註", "下次預計", "預計日期", "樹高cm", "幅寬cm", "幹徑cm", "樹勢", "線材", "用土", "肥料／藥劑", "照片數"];
     const cell = (x) => `"${String(x ?? "").replace(/"/g, '""')}"`;
     const rows = entries.map((e) => {
       const t = treeById[e.tree_id] || {};
       return [
-        t.name, t.code, t.species_name, e.entry_date, e.operations.join("、"), e.note, e.next_action, e.next_date,
+        t.uid, t.name, t.code, t.species_name, who(e.owner_id), e.entry_date, e.operations.join("、"), e.note, e.next_action, e.next_date,
         e.height_cm, e.width_cm, e.trunk_cm, e.vigor ? `${e.vigor} ${VIGOR_LABEL[e.vigor]}` : "",
         e.wire, e.soil, e.fertilizer, photos.filter((p) => p.entry_id === e.id).length,
       ].map(cell).join(",");
@@ -219,7 +253,7 @@ async function exportZip() {
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 60000);
-    toast(`已匯出 ${trees.length} 棵樹、${entries.length} 筆紀錄、${photos.length} 張照片`, "ok");
+    toast(`已匯出 ${trees.length} 盆盆栽、${entries.length} 筆紀錄、${photos.length} 張照片`, "ok");
   } catch (err) {
     console.error(err);
     toast("匯出失敗：" + (err.message || err), "err");

@@ -1,7 +1,7 @@
 // 新增／編輯紀錄：日期、五個角度＋細節照片、作業項目、備註、下次預計、整體特徵與用材
 import {
   getTree, getEntry, listOperationTypes, opsForSpecies, addOperationType, treePhotos,
-  saveEntry, uploadPhoto, updatePhoto, deletePhotos,
+  saveEntry, uploadPhoto, updatePhoto, deletePhotos, myId,
 } from "../db.js";
 import { h, field, loading, toast, busy, confirmDialog, promptDialog, photoImg, hydratePhotos, fmtDate, today, sectionTitle } from "../ui.js";
 import { ANGLES, VIGOR_LABEL } from "../constants.js";
@@ -15,7 +15,10 @@ export async function renderEntryForm(el, ctx) {
 
   let entry = null, treeId;
   if (isEdit) {
-    entry = await getEntry(ctx.params[0]);
+    const [e, me] = await Promise.all([getEntry(ctx.params[0]), myId()]);
+    // 前任創作者的紀錄是唯讀的
+    if (e.owner_id !== me) { location.replace(`#/entry/${e.id}`); return; }
+    entry = e;
     treeId = entry.tree_id;
   } else {
     treeId = ctx.params[0];

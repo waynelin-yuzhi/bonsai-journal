@@ -1,4 +1,4 @@
-// 最近紀錄：所有樹的紀錄依日期排列，按月份分組
+// 最近紀錄：所有盆栽的紀錄依日期排列，按月份分組
 import { recentEntries } from "../db.js";
 import { h, loading, photoImg, hydratePhotos, fmtDate, sectionTitle } from "../ui.js";
 import { enso } from "../icons.js";

@@ -1,6 +1,6 @@
 // 單筆紀錄：照片、作業、特徵、用材、備註
-import { getEntry, deleteEntry } from "../db.js";
-import { h, loading, photoImg, hydratePhotos, fmtDate, confirmDialog, busy, toast, sectionTitle } from "../ui.js";
+import { getEntry, deleteEntry, myId, creatorNames } from "../db.js";
+import { h, loading, photoImg, hydratePhotos, fmtDate, confirmDialog, busy, toast, sectionTitle, creatorLabel } from "../ui.js";
 import { icon } from "../icons.js";
 import { ANGLES, ANGLE_LABEL, VIGOR_LABEL } from "../constants.js";
 import { openViewer } from "../viewer.js";
@@ -8,12 +8,15 @@ import { openViewer } from "../viewer.js";
 export async function renderEntry(el, ctx) {
   const [id] = ctx.params;
   el.append(loading());
-  const e = await getEntry(id);
+  const [e, me] = await Promise.all([getEntry(id), myId()]);
+  // 前任創作者寫的紀錄：顯示作者、唯讀
+  const mine = e.owner_id === me;
+  const names = mine ? {} : await creatorNames([e.owner_id]);
   if (!ctx.alive()) return;
   const tree = e.trees;
   ctx.setTitle(tree.name);
   ctx.setParent(`#/tree/${tree.id}`);
-  ctx.setActions(h("a", { class: "icon-btn", href: `#/entry/${id}/edit`, title: "編輯", "aria-label": "編輯紀錄" }, icon("edit")));
+  if (mine) ctx.setActions(h("a", { class: "icon-btn", href: `#/entry/${id}/edit`, title: "編輯", "aria-label": "編輯紀錄" }, icon("edit")));
 
   // 五個角度依序，細節放後面
   const order = ANGLES.map((a) => a.key);
@@ -35,6 +38,7 @@ export async function renderEntry(el, ctx) {
     h("div", { class: "entry-head" }, [
       h("div", { class: "entry-date" }, fmtDate(e.entry_date)),
       h("a", { class: "entry-tree", href: `#/tree/${tree.id}` }, [tree.name, tree.code && ` · ${tree.code}`]),
+      !mine && h("div", { class: "entry-author" }, `前任創作者 ${creatorLabel(e.owner_id, names, me)} 的紀錄・唯讀`),
     ]),
     e.operations.length && h("div", { class: "tags big" }, e.operations.map((o) => h("span", { class: "tag" }, o))),
 
@@ -55,7 +59,7 @@ export async function renderEntry(el, ctx) {
     facts.length && h("div", { class: "card facts" }, facts.map(([k, v]) => h("div", {}, [h("div", { class: "v" }, v), h("div", { class: "k" }, k)]))),
     materials.length && h("div", { class: "card kv" }, materials.map(([k, v]) => h("div", { class: "kv-row" }, [h("span", { class: "k" }, k), h("span", {}, v)]))),
 
-    h("div", { class: "danger-zone" }, h("button", {
+    mine && h("div", { class: "danger-zone" }, h("button", {
       class: "btn btn-ghost-danger btn-sm",
       onclick: async () => {
         if (!(await confirmDialog("刪除這筆紀錄？", `${fmtDate(e.entry_date)} 的紀錄和 ${all.length} 張照片會一起刪除，無法復原。`, "刪除"))) return;
