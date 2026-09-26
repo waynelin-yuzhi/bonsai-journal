@@ -1,6 +1,6 @@
 // 單筆紀錄：照片、作業、特徵、用材、備註
 import { getEntry, deleteEntry, myId, creatorNames } from "../db.js";
-import { h, loading, photoImg, hydratePhotos, fmtDate, confirmDialog, busy, toast, sectionTitle, creatorLabel } from "../ui.js";
+import { h, loading, photoImg, hydratePhotos, fmtDate, confirmDialog, busy, toast, sectionTitle, creatorLabel, treeTitle } from "../ui.js";
 import { icon } from "../icons.js";
 import { ANGLES, ANGLE_LABEL, VIGOR_LABEL } from "../constants.js";
 import { openViewer } from "../viewer.js";
@@ -14,7 +14,7 @@ export async function renderEntry(el, ctx) {
   const names = mine ? {} : await creatorNames([e.owner_id]);
   if (!ctx.alive()) return;
   const tree = e.trees;
-  ctx.setTitle(tree.name);
+  ctx.setTitle(treeTitle(tree));
   ctx.setParent(`#/tree/${tree.id}`);
   if (mine) ctx.setActions(h("a", { class: "icon-btn", href: `#/entry/${id}/edit`, title: "編輯", "aria-label": "編輯紀錄" }, icon("edit")));
 
@@ -37,7 +37,7 @@ export async function renderEntry(el, ctx) {
   el.replaceChildren(...[
     h("div", { class: "entry-head" }, [
       h("div", { class: "entry-date" }, fmtDate(e.entry_date)),
-      h("a", { class: "entry-tree", href: `#/tree/${tree.id}` }, [tree.name, tree.code && ` · ${tree.code}`]),
+      h("a", { class: "entry-tree", href: `#/tree/${tree.id}` }, [treeTitle(tree), tree.code && ` · ${tree.code}`]),
       !mine && h("div", { class: "entry-author" }, `前任創作者 ${creatorLabel(e.owner_id, names, me)} 的紀錄・唯讀`),
     ]),
     e.operations.length && h("div", { class: "tags big" }, e.operations.map((o) => h("span", { class: "tag" }, o))),

@@ -8,22 +8,25 @@ create extension if not exists "pgcrypto";
 
 -- ---------- 樹種 ----------
 -- owner_id 為 null：系統預設（所有人看得到）；有值：使用者自訂
+-- category：柏、松、花果、落葉、常綠（後三者合稱雜木）
 create table if not exists public.species (
   id         uuid primary key default gen_random_uuid(),
   name       text not null,
-  category   text not null default '松柏類',
+  category   text not null check (category in ('柏', '松', '花果', '落葉', '常綠')),
   owner_id   uuid references auth.users(id) on delete cascade,
   sort       int  not null default 100,
   created_at timestamptz not null default now()
 );
 
 -- ---------- 作業項目 ----------
--- species_id 為 null：所有樹種共用；有值：該樹種專屬
+-- species_id、category 都是 null：所有樹種共用
+-- category 有值：該分類適用（雜木＝花果、落葉、常綠都適用）；species_id 有值：該樹種專屬
 -- owner_id   為 null：系統預設；有值：使用者自訂
 create table if not exists public.operation_types (
   id         uuid primary key default gen_random_uuid(),
   name       text not null,
   species_id uuid references public.species(id) on delete cascade,
+  category   text,
   owner_id   uuid references auth.users(id) on delete cascade,
   sort       int  not null default 100,
   created_at timestamptz not null default now()
@@ -34,7 +37,7 @@ create table if not exists public.trees (
   id          uuid primary key default gen_random_uuid(),
   owner_id    uuid not null default auth.uid() references auth.users(id) on delete cascade,
   code        text,                 -- 編號，如 JP-001
-  name        text not null,        -- 作品名稱
+  name        text,                 -- 作品名稱（選填，沒取名就顯示樹種）
   species_id  uuid references public.species(id) on delete set null,
   source      text,                 -- 來源：山採／素材／扦插…
   acquired_on date,                 -- 取得日期
@@ -121,6 +124,7 @@ create view public.tree_overview with (security_invoker = true) as
 select
   t.*,
   s.name as species_name,
+  s.category as species_category,
   (select count(*) from public.entries e where e.tree_id = t.id)          as entry_count,
   (select max(e.entry_date) from public.entries e where e.tree_id = t.id) as last_entry_date,
   (select p.thumb_path
@@ -240,11 +244,41 @@ create policy photos_bucket_delete on storage.objects for delete to authenticate
   using (bucket_id = 'photos' and (storage.foldername(name))[1] = (select auth.uid())::text);
 
 -- ============================================================
+-- 分類：柏／松／雜木（花果、落葉、常綠）
+--   舊版的樹種分類都是「松柏類」，依名稱轉成柏或松
+-- ============================================================
+alter table public.species alter column category drop default;
+update public.species set category = case when name like '%松%' then '松' else '柏' end
+ where category not in ('柏', '松', '花果', '落葉', '常綠');
+alter table public.species drop constraint if exists species_category_check;
+alter table public.species add constraint species_category_check
+  check (category in ('柏', '松', '花果', '落葉', '常綠'));
+
+alter table public.operation_types add column if not exists category text;
+alter table public.operation_types drop constraint if exists operation_types_category_check;
+alter table public.operation_types add constraint operation_types_category_check
+  check (category is null or (species_id is null and category in ('柏', '松', '雜木', '花果', '落葉', '常綠')));
+
+-- 盆栽名稱改為選填
+alter table public.trees alter column name drop not null;
+
+-- ============================================================
 -- 預設資料：樹種與作業項目（可在 App「設定」頁再自訂）
 -- ============================================================
+with v(name, category, sort) as (values
+    ('真柏', '柏', 10), ('杜松', '柏', 20), ('檜', '柏', 30),
+    ('黑松', '松', 110), ('五葉松', '松', 120), ('赤松', '松', 130), ('羅漢松', '松', 140),
+    ('梅', '花果', 210), ('杜鵑（皐月）', '花果', 220), ('石榴', '花果', 230), ('長壽梅', '花果', 240), ('海棠', '花果', 250), ('火棘', '花果', 260),
+    ('楓', '落葉', 310), ('三角楓', '落葉', 320), ('櫸', '落葉', 330), ('朴樹', '落葉', 340), ('九芎', '落葉', 350), ('銀杏', '落葉', 360),
+    ('榕樹', '常綠', 410), ('黃楊', '常綠', 420), ('七里香', '常綠', 430), ('春不老', '常綠', 440), ('雀梅', '常綠', 450)
+  ),
+  upd as (
+    update public.species s set category = v.category, sort = v.sort
+      from v where s.name = v.name and s.owner_id is null
+    returning s.id
+  )
 insert into public.species (name, category, sort)
-select v.name, '松柏類', v.sort
-  from (values ('真柏', 10), ('黑松', 20), ('五葉松', 30)) as v(name, sort)
+select v.name, v.category, v.sort from v
  where not exists (select 1 from public.species s where s.name = v.name and s.owner_id is null);
 
 -- 共用作業
@@ -257,6 +291,17 @@ select v.name, v.sort
  where not exists (
    select 1 from public.operation_types o
     where o.name = v.name and o.species_id is null and o.owner_id is null);
+
+-- 分類適用的作業
+insert into public.operation_types (name, category, sort)
+select v.op, v.category, v.sort
+  from (values
+    ('雜木', '摘心', 300), ('雜木', '葉刈（剪葉）', 310),
+    ('花果', '花後修剪', 320), ('花果', '摘果', 330)
+  ) as v(category, op, sort)
+ where not exists (
+   select 1 from public.operation_types o
+    where o.name = v.op and o.category = v.category and o.owner_id is null);
 
 -- 樹種專屬作業
 insert into public.operation_types (name, species_id, sort)
@@ -423,6 +468,7 @@ create view public.tree_overview with (security_invoker = true) as
 select
   t.*,
   s.name as species_name,
+  s.category as species_category,
   (select count(*) from public.entries e where e.tree_id = t.id)          as entry_count,
   (select max(e.entry_date) from public.entries e where e.tree_id = t.id) as last_entry_date,
   (select p.thumb_path
@@ -631,7 +677,7 @@ $$;
 create or replace function public.preview_transfer(p_code text) returns json
 language sql stable security definer set search_path = '' as $$
   select json_build_object(
-    'uid', t.uid, 'name', t.name, 'species', s.name,
+    'uid', t.uid, 'name', coalesce(nullif(trim(t.name), ''), s.name, '未命名盆栽'), 'species', s.name,
     'entries', (select count(*) from public.entries e where e.tree_id = t.id),
     'from', coalesce(nullif(trim(p.display_name), ''), '未命名創作者'),
     'note', tr.note, 'expires_at', tr.expires_at)

@@ -5,7 +5,7 @@ import {
 } from "../db.js";
 import {
   h, loading, photoImg, hydratePhotos, fmtDate, fmtDateTime, daysBetween, durationText, confirmDialog, busy, toast,
-  sectionTitle, sheet, field, creatorLabel,
+  sectionTitle, sheet, field, creatorLabel, treeTitle, speciesTag,
 } from "../ui.js";
 import { icon, enso } from "../icons.js";
 import { ANGLES } from "../constants.js";
@@ -21,7 +21,8 @@ export async function renderTree(el, ctx) {
   const [tree, entries, lineage, transfer, me] = await Promise.all([getTree(id), listEntries(id), treeLineage(id), openTransfer(id), myId()]);
   const names = await creatorNames([...lineage.map((c) => c.owner_id), ...entries.map((e) => e.owner_id)]);
   if (!ctx.alive()) return;
-  ctx.setTitle(tree.name);
+  const title = treeTitle(tree);
+  ctx.setTitle(title);
   const rerender = () => renderTree(el, ctx);
   // 有前任創作者時，時間軸每筆標出作者
   const multi = lineage.length > 1 || entries.some((e) => e.owner_id !== me);
@@ -38,7 +39,7 @@ export async function renderTree(el, ctx) {
   const cover = allPhotos.find((p) => p.angle === "front") || allPhotos[0];
 
   const facts = [
-    tree.species_name,
+    speciesTag(tree),
     tree.source,
     tree.acquired_on && `${fmtDate(tree.acquired_on)} 取得`,
   ].filter(Boolean);
@@ -56,7 +57,7 @@ export async function renderTree(el, ctx) {
       h("button", { class: "hero-uid", title: "複製身分證", onclick: () => copyText(tree.uid, "已複製身分證") }, [
         h("span", { class: "k" }, "身分證"), h("span", { class: "v" }, tree.uid), icon("copy"),
       ]),
-      h("div", { class: "hero-title" }, [tree.name, tree.code && h("span", { class: "code" }, tree.code)]),
+      h("div", { class: "hero-title" }, [title, tree.code && h("span", { class: "code" }, tree.code)]),
       facts.length && h("div", { class: "hero-facts" }, facts.join(" · ")),
       h("div", { class: "hero-stats" }, stats.map(([k, v]) => h("div", {}, [h("div", { class: "v" }, v), h("div", { class: "k" }, k)]))),
       tree.pot && h("div", { class: "hero-line" }, `盆器：${tree.pot}`),
@@ -93,7 +94,7 @@ export async function renderTree(el, ctx) {
   // 有前任創作者的紀錄就不能刪除（只能封存或再轉移），避免傳承紀錄消失
   const othersWrote = entries.some((e) => e.owner_id !== me);
   const removeTree = async () => {
-    const ok = await confirmDialog("刪除這盆盆栽？", `「${tree.name}」的 ${entries.length} 筆紀錄和所有照片都會一起刪除，無法復原。`, "刪除");
+    const ok = await confirmDialog("刪除這盆盆栽？", `「${title}」的 ${entries.length} 筆紀錄和所有照片都會一起刪除，無法復原。`, "刪除");
     if (!ok) return;
     const b = busy("刪除中…");
     try {
@@ -165,7 +166,7 @@ async function openTransferForm(tree, onDone) {
   drawChips();
 
   sheet("轉移給他人", (close) => h("div", {}, [
-    h("p", { class: "sheet-msg" }, `產生一組轉移碼交給對方。對方在「我的盆栽 → 接收」輸入後，「${tree.name}」和所有紀錄、照片會移到對方名下，傳承紀錄會記下你這一段。`),
+    h("p", { class: "sheet-msg" }, `產生一組轉移碼交給對方。對方在「我的盆栽 → 接收」輸入後，「${treeTitle(tree)}」和所有紀錄、照片會移到對方名下，傳承紀錄會記下你這一段。`),
     !hasName && field("你的創作者名稱", nameInput, "對方的傳承紀錄會顯示這個名稱，之後可以在「設定」修改。"),
     field("方式（選填）", chips),
     h("div", { class: "notice" }, "轉移後你就看不到這盆盆栽了。建議先到「設定 → 匯出備份」留一份在自己手上。轉移碼 7 天內有效，對方接收前都可以作廢。"),
@@ -190,7 +191,7 @@ async function openTransferForm(tree, onDone) {
 
 function transferCard(t, tree, onDone) {
   const link = `${WEB_URL}#/receive/${t.code}`;
-  const text = `盆栽「${tree.name}」（${tree.uid}）要轉移給你。\n打開 Bonsai Journal →「我的盆栽」右上角「接收」，輸入轉移碼：${t.code}\n或直接開啟：${link}`;
+  const text = `盆栽「${treeTitle(tree)}」（${tree.uid}）要轉移給你。\n打開 Bonsai Journal →「我的盆栽」右上角「接收」，輸入轉移碼：${t.code}\n或直接開啟：${link}`;
   return h("div", { class: "transfer-card" }, [
     h("div", { class: "k" }, "轉移碼 · 等待對方接收"),
     h("div", { class: "transfer-code" }, t.code),

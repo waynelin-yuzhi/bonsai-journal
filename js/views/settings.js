@@ -2,10 +2,11 @@
 import {
   listSpecies, addSpecies, deleteSpecies, listOperationTypes, addOperationType, deleteOperationType,
   currentEmail, signOut, changePassword, exportData, downloadPhoto, getMyProfile, saveMyProfile, creatorNames, myId,
+  updateSpecies,
 } from "../db.js";
-import { h, loading, toast, busy, confirmDialog, sheet, field, today, sectionTitle } from "../ui.js";
+import { h, loading, toast, busy, confirmDialog, sheet, field, today, sectionTitle, treeTitle } from "../ui.js";
 import { icon, enso } from "../icons.js";
-import { ANGLE_LABEL, VIGOR_LABEL } from "../constants.js";
+import { ANGLE_LABEL, VIGOR_LABEL, CATEGORIES, OP_SCOPES, CATEGORY_LABEL } from "../constants.js";
 import { runningVersion, checkForUpdate } from "../update.js";
 import { isStandalone, canInstall, isIOS, promptInstall, onInstallChange } from "../install.js";
 import { isNativeApp, nativeBuild, WEB_URL, APK_URL } from "../platform.js";
@@ -17,36 +18,46 @@ export async function renderSettings(el, ctx) {
   if (!ctx.alive()) return;
   const refresh = () => { el.replaceChildren(); renderSettings(el, ctx); };
 
-  // ---------- 樹種 ----------
-  const speciesInput = h("input", { type: "text", placeholder: "例：羅漢松、杜松" });
+  // ---------- 樹種：依分類列出；自己新增的點一下可以改名、改分類或刪除 ----------
+  const speciesInput = h("input", { type: "text", placeholder: "例：紫藤" });
+  const speciesCat = h("select", {}, CATEGORIES.map((c) => h("option", { value: c.key }, c.label)));
   const speciesCard = h("div", { class: "card" }, [
-    h("div", { class: "chips wrap" }, species.map((s) => h("span", { class: "chip static" + (s.owner_id ? "" : " sys") }, [
-      s.name,
-      s.owner_id && h("button", { class: "chip-x", "aria-label": "刪除", onclick: async () => {
-        if (!(await confirmDialog(`刪除樹種「${s.name}」？`, "使用這個樹種的盆栽會變成「未指定」，它專屬的作業項目也會一起刪除。", "刪除"))) return;
-        try { await deleteSpecies(s.id); refresh(); } catch (err) { toast("刪除失敗：" + err.message, "err"); }
-      } }, icon("close")),
-    ]))),
+    ...CATEGORIES.map((c) => {
+      const list = species.filter((s) => s.category === c.key);
+      return h("div", { class: "op-group" }, [
+        h("div", { class: "subhead" }, c.label),
+        list.length
+          ? h("div", { class: "chips wrap" }, list.map((s) => s.owner_id
+            ? h("button", { class: "chip", onclick: () => openSpeciesForm(s, species, refresh) }, [s.name, icon("edit")])
+            : h("span", { class: "chip static sys" }, s.name)))
+          : h("div", { class: "hint" }, "（尚無）"),
+      ]);
+    }),
     h("div", { class: "inline-add" }, [
-      speciesInput,
+      speciesCat, speciesInput,
       h("button", { class: "btn btn-primary btn-sm", onclick: async () => {
         const n = speciesInput.value.trim();
         if (!n) return;
         if (species.some((s) => s.name === n)) { toast("已經有這個樹種", "err"); return; }
-        try { await addSpecies(n); toast("已新增", "ok"); refresh(); } catch (err) { toast("新增失敗：" + err.message, "err"); }
+        try { await addSpecies(n, speciesCat.value); toast("已新增", "ok"); refresh(); } catch (err) { toast("新增失敗：" + err.message, "err"); }
       } }, "新增"),
     ]),
-    h("div", { class: "hint" }, "灰色是系統預設，不能刪除。"),
+    h("div", { class: "hint" }, "灰色是系統預設；自己新增的點一下可以改名、改分類或刪除。"),
   ]);
 
-  // ---------- 作業項目 ----------
-  const groups = [{ id: null, name: "共用（所有樹種）" }, ...species.map((s) => ({ id: s.id, name: s.name }))];
+  // ---------- 作業項目：共用 → 分類適用 → 樹種專屬 ----------
+  const scopes = [
+    { key: "common", label: "共用（所有樹種）", match: (o) => !o.species_id && !o.category, add: {} },
+    ...OP_SCOPES.map((c) => ({ key: `cat:${c.key}`, label: c.label, match: (o) => o.category === c.key, add: { category: c.key } })),
+    ...CATEGORIES.flatMap((c) => species.filter((s) => s.category === c.key))
+      .map((s) => ({ key: `sp:${s.id}`, label: s.name, match: (o) => o.species_id === s.id, add: { speciesId: s.id } })),
+  ];
   const opsCard = h("div", { class: "card" }, [
-    ...groups.map((g) => {
-      const ops = opTypes.filter((o) => (o.species_id || null) === g.id);
+    ...scopes.map((g) => {
+      const ops = opTypes.filter(g.match);
       if (!ops.length) return null;
       return h("div", { class: "op-group" }, [
-        h("div", { class: "subhead" }, g.name),
+        h("div", { class: "subhead" }, g.label),
         h("div", { class: "chips wrap" }, ops.map((o) => h("span", { class: "chip static" + (o.owner_id ? "" : " sys") }, [
           o.name,
           o.owner_id && h("button", { class: "chip-x", "aria-label": "刪除", onclick: async () => {
@@ -56,17 +67,24 @@ export async function renderSettings(el, ctx) {
       ]);
     }),
     (() => {
-      const scope = h("select", {}, groups.map((g) => h("option", { value: g.id || "" }, g.id ? g.name : "共用")));
+      const opt = (g) => h("option", { value: g.key }, g.label);
+      const scope = h("select", { "aria-label": "適用範圍" }, [
+        opt(scopes[0]),
+        h("optgroup", { label: "分類" }, scopes.filter((g) => g.key.startsWith("cat:")).map(opt)),
+        h("optgroup", { label: "樹種" }, scopes.filter((g) => g.key.startsWith("sp:")).map(opt)),
+      ]);
       const name = h("input", { type: "text", placeholder: "作業名稱" });
       return h("div", { class: "inline-add" }, [
         scope, name,
         h("button", { class: "btn btn-primary btn-sm", onclick: async () => {
           const n = name.value.trim();
           if (!n) return;
-          try { await addOperationType(n, scope.value || null); toast("已新增", "ok"); refresh(); } catch (err) { toast("新增失敗：" + err.message, "err"); }
+          const g = scopes.find((x) => x.key === scope.value);
+          try { await addOperationType(n, g.add); toast("已新增", "ok"); refresh(); } catch (err) { toast("新增失敗：" + err.message, "err"); }
         } }, "新增"),
       ]);
     })(),
+    h("div", { class: "hint" }, "紀錄時會出現：共用＋這盆盆栽分類的作業＋樹種專屬的作業。「雜木（全部）」花果、落葉、常綠都會出現。"),
   ]);
 
   el.replaceChildren(
@@ -145,6 +163,38 @@ function installCard() {
   return card;
 }
 
+// ---------- 編輯自訂樹種 ----------
+function openSpeciesForm(sp, species, onDone) {
+  const name = h("input", { type: "text", value: sp.name });
+  const cat = h("select", {}, CATEGORIES.map((c) => h("option", { value: c.key }, c.label)));
+  cat.value = sp.category;
+  sheet("編輯樹種", (close) => h("div", {}, [
+    field("名稱", name),
+    field("分類", cat),
+    h("button", { class: "btn btn-primary btn-block", onclick: async (e) => {
+      const btn = e.currentTarget;
+      const n = name.value.trim();
+      if (!n) { toast("請輸入名稱", "err"); return; }
+      if (species.some((s) => s.id !== sp.id && s.name === n)) { toast("已經有這個樹種", "err"); return; }
+      btn.disabled = true;
+      try {
+        await updateSpecies(sp.id, { name: n, category: cat.value });
+        close();
+        toast("已更新", "ok");
+        onDone();
+      } catch (err) {
+        toast("更新失敗：" + err.message, "err");
+        btn.disabled = false;
+      }
+    } }, "儲存"),
+    h("div", { class: "danger-zone" }, h("button", { class: "btn btn-ghost-danger btn-sm", onclick: async () => {
+      close();
+      if (!(await confirmDialog(`刪除樹種「${sp.name}」？`, "使用這個樹種的盆栽會變成「未指定」，它專屬的作業項目也會一起刪除。", "刪除"))) return;
+      try { await deleteSpecies(sp.id); toast("已刪除", "ok"); onDone(); } catch (err) { toast("刪除失敗：" + err.message, "err"); }
+    } }, "刪除這個樹種")),
+  ]));
+}
+
 // ---------- 創作者名稱 ----------
 function openNameForm(current, onSaved) {
   const input = h("input", { type: "text", maxlength: "40", value: current, placeholder: "例：韋恩、有植 YUZHIPLANT" });
@@ -207,7 +257,7 @@ async function exportZip() {
     const zip = new JSZip();
     const treeById = Object.fromEntries(trees.map((t) => [t.id, t]));
     const entryById = Object.fromEntries(entries.map((e) => [e.id, e]));
-    const folder = (t) => safe([t.uid, t.code, t.name].filter(Boolean).join("_"));
+    const folder = (t) => safe([t.uid, t.code, treeTitle(t)].filter(Boolean).join("_"));
 
     // 照片原檔：photos/身分證_編號_名稱/日期_角度_序號.jpg
     const files = {};
@@ -234,12 +284,12 @@ async function exportZip() {
       custom_operation_types: opTypes.filter((o) => o.owner_id),
     }, null, 2));
 
-    const head = ["身分證", "盆栽名稱", "自訂編號", "樹種", "作者", "日期", "作業項目", "備註", "下次預計", "預計日期", "樹高cm", "幅寬cm", "幹徑cm", "樹勢", "線材", "用土", "肥料／藥劑", "照片數"];
+    const head = ["身分證", "盆栽名稱", "自訂編號", "分類", "樹種", "作者", "日期", "作業項目", "備註", "下次預計", "預計日期", "樹高cm", "幅寬cm", "幹徑cm", "樹勢", "線材", "用土", "肥料／藥劑", "照片數"];
     const cell = (x) => `"${String(x ?? "").replace(/"/g, '""')}"`;
     const rows = entries.map((e) => {
       const t = treeById[e.tree_id] || {};
       return [
-        t.uid, t.name, t.code, t.species_name, who(e.owner_id), e.entry_date, e.operations.join("、"), e.note, e.next_action, e.next_date,
+        t.uid, t.name, t.code, CATEGORY_LABEL[t.species_category] || "", t.species_name, who(e.owner_id), e.entry_date, e.operations.join("、"), e.note, e.next_action, e.next_date,
         e.height_cm, e.width_cm, e.trunk_cm, e.vigor ? `${e.vigor} ${VIGOR_LABEL[e.vigor]}` : "",
         e.wire, e.soil, e.fertilizer, photos.filter((p) => p.entry_id === e.id).length,
       ].map(cell).join(",");

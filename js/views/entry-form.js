@@ -3,7 +3,7 @@ import {
   getTree, getEntry, listOperationTypes, opsForSpecies, addOperationType, treePhotos,
   saveEntry, uploadPhoto, updatePhoto, deletePhotos, myId,
 } from "../db.js";
-import { h, field, loading, toast, busy, confirmDialog, promptDialog, photoImg, hydratePhotos, fmtDate, today, sectionTitle } from "../ui.js";
+import { h, field, loading, toast, busy, confirmDialog, promptDialog, photoImg, hydratePhotos, fmtDate, today, sectionTitle, treeTitle } from "../ui.js";
 import { ANGLES, VIGOR_LABEL } from "../constants.js";
 import { prepareImage } from "../image.js";
 import { bindPhotoPicker } from "../picker.js";
@@ -25,7 +25,7 @@ export async function renderEntryForm(el, ctx) {
   }
   const [tree, opTypes, history] = await Promise.all([getTree(treeId), listOperationTypes(), treePhotos(treeId)]);
   if (!ctx.alive()) return;
-  ctx.setTitle(isEdit ? `編輯紀錄 · ${tree.name}` : `新增紀錄 · ${tree.name}`);
+  ctx.setTitle(`${isEdit ? "編輯紀錄" : "新增紀錄"} · ${treeTitle(tree)}`);
 
   // ---------- 狀態 ----------
   let dirty = false;
@@ -147,7 +147,7 @@ export async function renderEntryForm(el, ctx) {
 
   // ---------- 作業項目 ----------
   const opsBox = h("div", { class: "chips wrap" });
-  let available = opsForSpecies(opTypes, tree.species_id);
+  let available = opsForSpecies(opTypes, tree.species_id, tree.species_category);
   const drawOps = () => {
     // 舊紀錄裡有、但現在清單沒有的作業也要顯示，避免編輯時被默默拿掉
     const names = [...available.map((o) => o.name), ...[...selectedOps].filter((n) => !available.some((o) => o.name === n))];
@@ -161,9 +161,9 @@ export async function renderEntryForm(el, ctx) {
         if (!n) return;
         if (!available.some((o) => o.name === n)) {
           try {
-            const op = await addOperationType(n, tree.species_id || null);
+            const op = await addOperationType(n, { speciesId: tree.species_id || null });
             opTypes.push(op);
-            available = opsForSpecies(opTypes, tree.species_id);
+            available = opsForSpecies(opTypes, tree.species_id, tree.species_category);
           } catch (err) {
             toast("新增失敗：" + err.message, "err");
             return;
