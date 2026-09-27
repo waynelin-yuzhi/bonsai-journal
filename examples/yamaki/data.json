@@ -1,0 +1,55 @@
+{
+  "id": "yamaki",
+  "uid": "BJ-1625-HRSM",
+  "name": "山木五葉松",
+  "subtitle": "廣島原爆倖存的盆栽",
+  "species": "五葉松",
+  "category": "松",
+  "latin": "Pinus parviflora 'Miyajima'",
+  "since": "1625",
+  "location": "美國國家盆栽與盆景博物館・日本館（華盛頓特區）",
+  "intro": "由廣島的山木家培育超過三百五十年，1945 年挺過原爆，1976 年作為日本慶祝美國建國兩百週年的禮物送到美國。這盆五葉松的一生經歷了家族傳承、戰爭與轉移，正好說明一盆盆栽可以有好幾位創作者、一段接一段被記錄下去。",
+  "lineage": [
+    { "name": "山木家", "from": "1625", "to": "1976", "note": "建立", "detail": "家族代代相傳" },
+    { "name": "美國國家盆栽與盆景博物館", "from": "1976", "to": null, "note": "贈與", "detail": "美國國家植物園照顧" }
+  ],
+  "entries": [
+    {
+      "date": "1625",
+      "author": "山木家",
+      "tags": ["開始培育"],
+      "note": "山木家開始培育這株五葉松（宮島五葉松）。之後由家族一代接一代修剪、照顧，持續了三百五十多年。",
+      "photos": [],
+      "sources": ["wiki", "nbf"]
+    },
+    {
+      "date": "1945-08-06",
+      "author": "山木家",
+      "tags": ["原爆倖存"],
+      "note": "美軍在廣島投下原子彈，爆炸點距離山木家不到兩英里（約 3 公里）。苗圃四周的圍牆擋住了衝擊，這株五葉松和山木家都倖存下來。",
+      "photos": [],
+      "sources": ["wiki", "weta"]
+    },
+    {
+      "date": "1976",
+      "author": "山木家",
+      "tags": ["贈與", "轉移"],
+      "note": "日本為慶祝美國建國兩百週年，致贈 53 盆盆栽給美國，其中一盆就是山木正（Masaru Yamaki）捐出的這株五葉松。從此由美國國家植物園照顧、在國家盆栽與盆景博物館展出。當時日本以外沒有人知道它經歷過原爆。",
+      "photos": [],
+      "sources": ["wiki", "nbf"]
+    },
+    {
+      "date": "2001",
+      "author": "美國國家盆栽與盆景博物館",
+      "tags": ["身世揭露"],
+      "note": "山木正的孫子說出這段往事，外界才知道這盆樹和山木家一起挺過了 1945 年的廣島原爆。之後它被稱為「廣島倖存者」與「和平之樹」。",
+      "photos": [],
+      "sources": ["wiki", "weta"]
+    }
+  ],
+  "sources": {
+    "wiki": { "label": "Wikipedia：Yamaki Pine", "url": "https://en.wikipedia.org/wiki/Yamaki_Pine" },
+    "nbf": { "label": "National Bonsai Foundation：Yamaki Pine", "url": "https://www.bonsai-nbf.org/yamaki-pine" },
+    "weta": { "label": "WETA Boundary Stones：From Hiroshima to Washington", "url": "https://boundarystones.weta.org/2025/05/19/hiroshima-washington-beloved-bonsais-journey-war-peace" }
+  }
+}

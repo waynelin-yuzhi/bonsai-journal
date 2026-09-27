@@ -7,6 +7,7 @@ import { renderEntryForm } from "./views/entry-form.js";
 import { renderCompare } from "./views/compare.js";
 import { renderRecent } from "./views/recent.js";
 import { renderSettings } from "./views/settings.js";
+import { renderExample } from "./views/example.js";
 
 const ID = "([0-9a-f-]{36})";
 const routes = [
@@ -18,6 +19,7 @@ const routes = [
   { re: new RegExp(`^tree/${ID}/compare$`), tab: "trees", eyebrow: "COMPARE", title: "前後對比", parent: ([id]) => `#/tree/${id}`, render: renderCompare },
   { re: new RegExp(`^entry/${ID}$`), tab: "trees", eyebrow: "RECORD", title: "紀錄", parent: () => "#/trees", render: renderEntry },
   { re: new RegExp(`^entry/${ID}/edit$`), tab: "trees", eyebrow: "EDIT", title: "編輯紀錄", noTabs: true, parent: ([id]) => `#/entry/${id}`, render: (el, ctx) => renderEntryForm(el, { ...ctx, mode: "edit" }) },
+  { re: /^example\/([a-z0-9-]+)$/, tab: "trees", eyebrow: "MASTERPIECE", title: "名木範例", parent: () => "#/trees", render: renderExample },
   { re: /^recent$/, tab: "recent", eyebrow: "TIMELINE", title: "最近紀錄", render: renderRecent },
   { re: /^settings$/, tab: "settings", eyebrow: "SETTINGS", title: "設定", render: renderSettings },
 ];

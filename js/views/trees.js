@@ -1,8 +1,9 @@
 // 我的盆栽：作品列表（依分類篩選）+ 新增／編輯盆栽檔案 + 接收別人轉移的盆栽
 import { listTrees, listSpecies, saveTree, addSpecies, previewTransfer, acceptTransfer } from "../db.js";
-import { h, sheet, field, loading, toast, busy, photoImg, hydratePhotos, fmtDate, fmtDateTime, today, treeTitle, speciesTag } from "../ui.js";
+import { h, sheet, field, loading, toast, busy, photoImg, hydratePhotos, fmtDate, fmtDateTime, today, treeTitle, speciesTag, sectionTitle } from "../ui.js";
 import { SOURCES, CATEGORIES, GROUPS, groupOf } from "../constants.js";
 import { icon, enso } from "../icons.js";
+import { EXAMPLES, exampleAsset } from "../examples.js";
 
 // 篩選：第一排 全部／柏／松／雜木／已封存；第二排 柏、松 選樹種，雜木 選花果／落葉／常綠
 let group = "all";
@@ -58,7 +59,7 @@ export async function renderTrees(el, ctx) {
         h("button", { class: "btn", onclick: () => openReceive() }, [icon("inbox"), "接收別人轉給你的盆栽"]),
       ]);
 
-    content.replaceChildren(...(trees.length ? [row1, row2, grid].filter(Boolean) : [empty]));
+    content.replaceChildren(...(trees.length ? [row1, row2, grid].filter(Boolean) : [empty]), exampleStrip());
     hydratePhotos(content);
   };
 
@@ -66,6 +67,23 @@ export async function renderTrees(el, ctx) {
 }
 
 const goTree = (t) => { location.hash = `#/tree/${t.id}`; };
+
+// 名木範例：放在列表最下面，看看一盆名木的一生怎麼被記錄
+function exampleStrip() {
+  return h("div", { class: "examples" }, [
+    sectionTitle("名木範例", "MASTERPIECE"),
+    ...EXAMPLES.map((x) => h("a", { class: "list-item example-item", href: `#/example/${x.id}` }, [
+      x.cover ? h("img", { class: "thumb", src: exampleAsset(x.id, x.cover), alt: "", loading: "lazy" }) : h("span", { class: "thumb ph" }, enso()),
+      h("div", { class: "grow" }, [
+        h("div", { class: "tree-no" }, x.uid),
+        h("div", { class: "title" }, x.name),
+        h("div", { class: "sub" }, `${x.tag} · ${x.since} — 今`),
+        h("div", { class: "sub" }, x.subtitle),
+      ]),
+      icon("forward"),
+    ])),
+  ]);
+}
 
 function treeCard(t) {
   const meta = [speciesTag(t), t.code, t.creator_count > 1 && `${t.creator_count} 代創作者`].filter(Boolean).join(" · ");

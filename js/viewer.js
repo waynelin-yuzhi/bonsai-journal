@@ -2,7 +2,7 @@
 import { h, photoImg, hydratePhotos } from "./ui.js";
 import { icon } from "./icons.js";
 
-// items: [{ path, label, caption }]
+// items: [{ path, label, caption }]；範例名木的照片是靜態檔，用 url 代替 path
 export function openViewer(items, start = 0) {
   let i = start;
   const img = h("img", { class: "viewer-img", alt: "" });
@@ -23,10 +23,14 @@ export function openViewer(items, start = 0) {
   async function show() {
     const it = items[i];
     img.removeAttribute("src");
-    const tmp = photoImg(it.path);
-    const holder = h("div", {}, tmp);
-    await hydratePhotos(holder);
-    img.src = tmp.src;
+    if (it.url) {
+      img.src = it.url;
+    } else {
+      const tmp = photoImg(it.path);
+      const holder = h("div", {}, tmp);
+      await hydratePhotos(holder);
+      img.src = tmp.src;
+    }
     label.replaceChildren(...[it.label && h("b", {}, it.label), it.caption && h("span", {}, it.caption)].filter(Boolean));
     counter.textContent = items.length > 1 ? `${i + 1} / ${items.length}` : "";
     prev.classList.toggle("hidden", i === 0);
