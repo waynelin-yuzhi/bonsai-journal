@@ -732,5 +732,120 @@ revoke execute on function public.create_transfer(uuid, text), public.cancel_tra
 grant execute on function public.create_transfer(uuid, text), public.cancel_transfer(uuid),
   public.preview_transfer(text), public.accept_transfer(text) to authenticated;
 
+-- ============================================================
+-- 問題反饋：使用者回報問題、提供建議；開發端（管理員）讀取、分析、回覆
+--   · 使用者只能新增自己的反饋、看自己的反饋狀態與回覆（看不到內部分析）
+--   · 管理員透過 admin_feedback_list／admin_feedback_update 看全部、改狀態、回覆
+--   · 分析（analysis）由開發端直接寫入資料庫
+--   加管理員（SQL Editor）：insert into private.app_admins (email) values ('你的 email');
+-- ============================================================
+create table if not exists private.app_admins (
+  email      text primary key,
+  created_at timestamptz not null default now()
+);
+
+create or replace function private.is_admin() returns boolean
+language sql stable security definer set search_path = '' as $$
+  select exists (
+    select 1 from private.app_admins a join auth.users u on lower(u.email) = lower(a.email)
+     where u.id = auth.uid());
+$$;
+
+create table if not exists public.feedback (
+  id              uuid primary key default gen_random_uuid(),
+  user_id         uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  kind            text not null check (kind in ('bug', 'idea', 'other')),  -- 問題回報／優化建議／其他
+  message         text not null check (char_length(message) between 1 and 4000),
+  screenshot_path text,          -- feedback bucket：{user_id}/{feedback_id}.jpg
+  app_version     text,
+  platform        text,          -- web／pwa／android 1.0.x
+  user_agent      text,
+  screen          text,
+  page            text,          -- 回報前所在的頁面
+  status          text not null default 'new' check (status in ('new', 'reviewing', 'planned', 'done', 'declined')),
+  reply           text,          -- 給使用者看的回覆
+  analysis        jsonb,         -- 內部分析：summary, category, impact, effort, priority, recommendation, reasoning, next_step
+  analyzed_at     timestamptz,
+  created_at      timestamptz not null default now(),
+  updated_at      timestamptz not null default now()
+);
+create index if not exists feedback_user_idx   on public.feedback (user_id, created_at desc);
+create index if not exists feedback_status_idx on public.feedback (status, created_at desc);
+
+drop trigger if exists feedback_touch on public.feedback;
+create trigger feedback_touch before update on public.feedback
+  for each row execute function public.touch_updated_at();
+
+alter table public.feedback enable row level security;
+drop policy if exists feedback_insert on public.feedback;
+drop policy if exists feedback_read   on public.feedback;
+create policy feedback_insert on public.feedback for insert to authenticated
+  with check (
+    user_id = (select auth.uid())
+    and (screenshot_path is null or screenshot_path like (select auth.uid())::text || '/%')
+  );
+create policy feedback_read on public.feedback for select to authenticated
+  using (user_id = (select auth.uid()));
+
+-- 欄位權限：使用者不能自己設定狀態、回覆，也讀不到內部分析
+revoke all on public.feedback from anon, authenticated;
+grant insert (id, kind, message, screenshot_path, app_version, platform, user_agent, screen, page)
+  on public.feedback to authenticated;
+grant select (id, user_id, kind, message, screenshot_path, app_version, platform, status, reply, created_at, updated_at)
+  on public.feedback to authenticated;
+
+-- 截圖：私人 bucket，自己的資料夾可以上傳、讀取、刪除；管理員讀得到全部
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('feedback', 'feedback', false, 5242880, array['image/jpeg', 'image/png', 'image/webp'])
+on conflict (id) do update
+  set public = false,
+      file_size_limit = excluded.file_size_limit,
+      allowed_mime_types = excluded.allowed_mime_types;
+
+drop policy if exists feedback_bucket_select on storage.objects;
+drop policy if exists feedback_bucket_insert on storage.objects;
+drop policy if exists feedback_bucket_delete on storage.objects;
+create policy feedback_bucket_select on storage.objects for select to authenticated
+  using (bucket_id = 'feedback' and ((storage.foldername(name))[1] = (select auth.uid())::text or private.is_admin()));
+create policy feedback_bucket_insert on storage.objects for insert to authenticated
+  with check (bucket_id = 'feedback' and (storage.foldername(name))[1] = (select auth.uid())::text);
+create policy feedback_bucket_delete on storage.objects for delete to authenticated
+  using (bucket_id = 'feedback' and (storage.foldername(name))[1] = (select auth.uid())::text);
+
+-- 管理員：我是不是管理員、看全部反饋（含分析與回報者）、改狀態與回覆
+create or replace function public.am_i_admin() returns boolean
+language sql stable security definer set search_path = '' as $$
+  select private.is_admin();
+$$;
+
+create or replace function public.admin_feedback_list() returns setof json
+language sql stable security definer set search_path = '' as $$
+  select json_build_object(
+    'id', f.id, 'kind', f.kind, 'message', f.message, 'screenshot_path', f.screenshot_path,
+    'app_version', f.app_version, 'platform', f.platform, 'user_agent', f.user_agent,
+    'screen', f.screen, 'page', f.page, 'status', f.status, 'reply', f.reply,
+    'analysis', f.analysis, 'analyzed_at', f.analyzed_at, 'created_at', f.created_at,
+    'email', u.email, 'name', p.display_name)
+  from public.feedback f
+  join auth.users u on u.id = f.user_id
+  left join public.profiles p on p.user_id = f.user_id
+  where private.is_admin()
+  order by f.created_at desc;
+$$;
+
+create or replace function public.admin_feedback_update(p_id uuid, p_status text, p_reply text) returns void
+language plpgsql security definer set search_path = '' as $$
+begin
+  if not private.is_admin() then raise exception '沒有權限'; end if;
+  update public.feedback set status = p_status, reply = nullif(trim(p_reply), '') where id = p_id;
+  if not found then raise exception '找不到這筆反饋'; end if;
+end $$;
+
+revoke execute on function public.am_i_admin(), public.admin_feedback_list(),
+  public.admin_feedback_update(uuid, text, text) from public, anon;
+grant execute on function public.am_i_admin(), public.admin_feedback_list(),
+  public.admin_feedback_update(uuid, text, text) to authenticated;
+
 revoke execute on all functions in schema private from public, anon, authenticated;
 grant execute on function private.tree_has_other_authors(uuid), private.photo_file_locked(text) to authenticated;
+grant execute on function private.is_admin() to authenticated;

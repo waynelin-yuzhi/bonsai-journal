@@ -8,6 +8,7 @@ import { renderCompare } from "./views/compare.js";
 import { renderRecent } from "./views/recent.js";
 import { renderSettings } from "./views/settings.js";
 import { renderExample } from "./views/example.js";
+import { renderFeedbackAdmin } from "./views/feedback.js";
 
 const ID = "([0-9a-f-]{36})";
 const routes = [
@@ -21,9 +22,12 @@ const routes = [
   { re: new RegExp(`^entry/${ID}/edit$`), tab: "trees", eyebrow: "EDIT", title: "編輯紀錄", noTabs: true, parent: ([id]) => `#/entry/${id}`, render: (el, ctx) => renderEntryForm(el, { ...ctx, mode: "edit" }) },
   { re: /^example\/([a-z0-9-]+)$/, tab: "trees", eyebrow: "MASTERPIECE", title: "名木範例", parent: () => "#/trees", render: renderExample },
   { re: /^recent$/, tab: "recent", eyebrow: "TIMELINE", title: "最近紀錄", render: renderRecent },
+  { re: /^admin\/feedback$/, tab: "settings", eyebrow: "FEEDBACK", title: "反饋收件匣", parent: () => "#/settings", render: renderFeedbackAdmin },
   { re: /^settings$/, tab: "settings", eyebrow: "SETTINGS", title: "設定", render: renderSettings },
 ];
 
+let lastPath = "";       // 上一個頁面（問題反饋會附上，方便知道在哪裡遇到問題）
+export const previousPath = () => lastPath;
 let navCount = 0;       // App 內換頁次數：大於 0 才用 history.back()，否則回上層
 let leaveGuard = null;  // 編輯中頁面可設定離開前確認
 let current = null;
@@ -54,8 +58,10 @@ export async function confirmLeave() {
   return true;
 }
 
+let currentPath = "";
 async function handleRoute() {
   const path = location.hash.replace(/^#\/?/, "");
+  if (path !== currentPath) { lastPath = currentPath; currentPath = path; }
   let route = routes[0], params = [];
   for (const r of routes) {
     const m = path.match(r.re);

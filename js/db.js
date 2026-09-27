@@ -272,6 +272,48 @@ export async function acceptTransfer(code) {
   return unwrap(await supabase.rpc("accept_transfer", { p_code: code }));
 }
 
+// ---------- 問題反饋 ----------
+// 使用者只讀得到這些欄位（內部分析 analysis 不開放）
+const FEEDBACK_COLS = "id, kind, message, screenshot_path, app_version, platform, status, reply, created_at, updated_at";
+
+// 先傳截圖、再新增反饋；截圖放在 feedback bucket 的 {uid}/{feedback_id}.jpg
+export async function submitFeedback({ kind, message, screenshot, context }) {
+  const id = crypto.randomUUID();
+  const me = await uid();
+  let screenshot_path = null;
+  if (screenshot) {
+    screenshot_path = `${me}/${id}.jpg`;
+    unwrap(await supabase.storage.from("feedback").upload(screenshot_path, screenshot, { contentType: "image/jpeg", upsert: false }));
+  }
+  try {
+    unwrap(await supabase.from("feedback").insert({ id, kind, message, screenshot_path, ...context }).select("id").single());
+  } catch (err) {
+    if (screenshot_path) await supabase.storage.from("feedback").remove([screenshot_path]).catch(() => {});
+    throw err;
+  }
+  return id;
+}
+
+export async function myFeedback() {
+  return unwrap(await supabase.from("feedback").select(FEEDBACK_COLS).order("created_at", { ascending: false }).limit(50));
+}
+
+export async function amIAdmin() {
+  try { return !!unwrap(await supabase.rpc("am_i_admin")); } catch { return false; }
+}
+
+export async function adminFeedbackList() {
+  return unwrap(await supabase.rpc("admin_feedback_list")) || [];
+}
+
+export async function adminFeedbackUpdate(id, status, reply) {
+  unwrap(await supabase.rpc("admin_feedback_update", { p_id: id, p_status: status, p_reply: reply || null }));
+}
+
+export async function feedbackShotUrl(path) {
+  return unwrap(await supabase.storage.from("feedback").createSignedUrl(path, 3600)).signedUrl;
+}
+
 // ---------- 匯出備份：分頁抓完所有資料（Supabase 單次最多回 1000 筆）----------
 async function fetchAll(build) {
   const out = [];
