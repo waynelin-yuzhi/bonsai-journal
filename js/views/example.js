@@ -33,7 +33,7 @@ export async function renderExample(el, ctx) {
       ? h("div", { class: "hero-cover", onclick: view(cover) }, h("img", { src: url(cover.file), alt: x.name }))
       : h("div", { class: "hero-cover empty-cover" }, enso()),
     h("div", { class: "hero-body" }, [
-      h("div", { class: "hero-uid static" }, [h("span", { class: "k" }, "身分證"), h("span", { class: "v" }, x.uid)]),
+      x.uid && h("div", { class: "hero-uid static" }, [h("span", { class: "k" }, "身分證"), h("span", { class: "v" }, x.uid)]),
       h("div", { class: "hero-title" }, [x.name, h("span", { class: "code" }, "名木範例")]),
       h("div", { class: "hero-facts" }, [`${x.category}・${x.species}`, x.subtitle].join(" · ")),
       h("div", { class: "hero-stats" }, (x.stats || [
@@ -52,7 +52,7 @@ export async function renderExample(el, ctx) {
     ? h("div", { class: "row tools" }, [
         h("button", { class: "btn", onclick: () => openViewer(items, 0) }, [icon("play"), `依時間看照片 ${photos.length} 張`]),
       ])
-    : !photos.length && x.photoNote && h("div", { class: "notice" }, x.photoNote);
+    : x.photoNote && h("div", { class: "notice" }, x.photoNote);
 
   // 時間軸：新的在上
   const newest = [...entries].reverse();
@@ -72,6 +72,7 @@ export async function renderExample(el, ctx) {
           const ph = photos.find((q) => q.file === p.file);
           return h("button", { class: "thumb-btn", onclick: view(ph), "aria-label": "看照片" }, h("img", { class: "thumb", src: url(p.thumb || p.file), alt: "", loading: "lazy" }));
         })),
+        e.videos?.length && h("div", { class: "tl-videos" }, e.videos.map(videoBox)),
         e.note && h("div", { class: "tl-note full" }, e.note),
         e.photos.some((p) => p.author) && h("div", { class: "tl-credit" }, e.photos.map(credit).filter(Boolean).join("；")),
         e.sources?.length && h("div", { class: "tl-src" }, e.sources.map(link).filter(Boolean)),
@@ -90,11 +91,32 @@ export async function renderExample(el, ctx) {
   el.replaceChildren(...[
     header, tools,
     sectionTitle("時間軸", "TIMELINE"), timeline,
-    sectionTitle("傳承", "LINEAGE"), lineage,
+    x.lineage.length && sectionTitle("傳承", "LINEAGE"), x.lineage.length && lineage,
     sectionTitle("資料來源", "SOURCES"),
     h("div", { class: "card example-sources" }, [
       ...Object.keys(x.sources).map((k) => h("div", {}, link(k))),
       h("p", { class: "hint" }, "範例內容整理自公開資料，照片依各自的授權標示作者。這是展示用的唯讀範例，不屬於任何使用者。"),
     ]),
   ].filter(Boolean));
+}
+
+// 官方 YouTube 影片：先顯示播放鈕，點了才載入 YouTube 官方播放器（省流量，也不先連到 YouTube）
+function videoBox(v) {
+  const box = h("div", { class: "video-box" });
+  const play = h("button", { class: "video-facade", "aria-label": `播放：${v.title}` }, [
+    icon("play"),
+    h("span", { class: "video-title" }, v.title),
+    h("span", { class: "video-src" }, "YouTube・近代盆栽官方頻道"),
+  ]);
+  play.addEventListener("click", () => {
+    box.replaceChildren(h("iframe", {
+      src: `https://www.youtube-nocookie.com/embed/${encodeURIComponent(v.youtube)}?autoplay=1&rel=0&playsinline=1`,
+      title: v.title,
+      allow: "autoplay; encrypted-media; picture-in-picture; fullscreen",
+      allowfullscreen: true,
+      referrerpolicy: "strict-origin-when-cross-origin",
+    }));
+  });
+  box.append(play);
+  return box;
 }

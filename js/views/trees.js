@@ -75,7 +75,7 @@ function exampleStrip() {
     ...EXAMPLES.map((x) => h("a", { class: "list-item example-item", href: `#/example/${x.id}` }, [
       x.cover ? h("img", { class: "thumb", src: exampleAsset(x.id, x.cover), alt: "", loading: "lazy" }) : h("span", { class: "thumb ph" }, enso()),
       h("div", { class: "grow" }, [
-        h("div", { class: "tree-no" }, x.uid),
+        x.uid && h("div", { class: "tree-no" }, x.uid),
         h("div", { class: "title" }, x.name),
         h("div", { class: "sub" }, `${x.tag} · ${x.period}`),
         h("div", { class: "sub" }, x.subtitle),

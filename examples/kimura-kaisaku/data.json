@@ -1,0 +1,61 @@
+{
+  "id": "kimura-kaisaku",
+  "name": "木村正彥 改作實技",
+  "subtitle": "近代盆栽連載・官方影片",
+  "species": "真柏",
+  "category": "柏",
+  "location": "《近代盆栽》月刊（近代出版）",
+  "stats": [["改作", "4 件"], ["期間", "2023–2024"], ["來源", "近代盆栽"]],
+  "intro": "《近代盆栽》把木村正彥的真柏改作拍成連載，每一期記錄一件素材從動手到定出樹姿的過程，也在官方 YouTube 頻道公開影片。這裡依刊登時間排成時間軸，可以直接播放每一期的改作過程。",
+  "photoNote": "影片由近代出版官方 YouTube 頻道（@kindaibonsai）提供，版權屬於近代出版；App 只嵌入 YouTube 官方播放器。",
+  "lineage": [],
+  "entries": [
+    {
+      "when": "2023.06",
+      "year": 2023,
+      "author": "木村正彥",
+      "tags": ["改作", "濃縮"],
+      "note": "改作實技「樹高變一半？真柏・驚人的濃縮技」。素材帶有天然的板舍利，木村把這株真柏大幅濃縮。刊於《近代盆栽》2023 年 6 月號。",
+      "photos": [],
+      "videos": [{ "youtube": "re3d21oMiGQ", "title": "［木村正彦の改作実技］樹高が半分に!? 真柏・驚愕の凝縮技（近代盆栽 2023年6月号）" }],
+      "sources": ["yt1"]
+    },
+    {
+      "when": "2023.10",
+      "year": 2023,
+      "author": "木村正彥",
+      "tags": ["改作", "新素材"],
+      "note": "改作實技第一彈「挑戰真柏新木」。記錄一株還沒做過的真柏素材，從開始作業到大致定出樹姿的過程。刊於《近代盆栽》2023 年 10 月號起。",
+      "photos": [],
+      "videos": [{ "youtube": "1oyd1-dJvww", "title": "［木村正彦 改作実技 第一弾］真柏の新木に挑む！（近代盆栽 2023年10月号）" }],
+      "sources": ["yt2"]
+    },
+    {
+      "when": "第二彈",
+      "author": "木村正彥",
+      "tags": ["改作", "銘樹"],
+      "note": "改作實技第二彈「挑戰真柏銘樹」。接在第一彈之後，這次的對象是一株已經有銘的真柏。刊登號數未查到。",
+      "photos": [],
+      "videos": [{ "youtube": "q_OnzOHxdOg", "title": "［木村正彦 改作実技 第二弾］真柏の銘樹に挑む！（近代盆栽）" }],
+      "sources": ["yt3"]
+    },
+    {
+      "when": "2024.06",
+      "year": 2024,
+      "author": "木村正彥",
+      "tags": ["改作", "打磨"],
+      "note": "真柏改作「打磨一件讓人聯想到『登龍の舞』的逸品」。刊於《近代盆栽》2024 年 6 月號。",
+      "photos": [],
+      "videos": [{ "youtube": "aJnFP8q-w54", "title": "［木村正彦 真柏改作］「登龍の舞」を彷彿とさせる逸品を磨く！（近代盆栽 2024年6月号）" }],
+      "sources": ["yt4"]
+    }
+  ],
+  "sources": {
+    "channel": { "label": "近代盆栽 Kindai Bonsai 官方 YouTube 頻道", "url": "https://www.youtube.com/@kindaibonsai" },
+    "yt1": { "label": "YouTube：真柏・驚愕の凝縮技（2023年6月号）", "url": "https://www.youtube.com/watch?v=re3d21oMiGQ" },
+    "yt2": { "label": "YouTube：改作実技 第一弾 真柏の新木に挑む！（2023年10月号）", "url": "https://www.youtube.com/watch?v=1oyd1-dJvww" },
+    "yt3": { "label": "YouTube：改作実技 第二弾 真柏の銘樹に挑む！", "url": "https://www.youtube.com/watch?v=q_OnzOHxdOg" },
+    "yt4": { "label": "YouTube：「登龍の舞」を彷彿とさせる逸品を磨く！（2024年6月号）", "url": "https://www.youtube.com/watch?v=aJnFP8q-w54" },
+    "kinbon": { "label": "近代出版（月刊《近代盆栽》）", "url": "https://www.bonsai.co.jp/" }
+  }
+}
