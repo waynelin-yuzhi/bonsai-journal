@@ -17,20 +17,28 @@ export async function renderExample(el, ctx) {
   const x = await loadExample(id);
   if (!ctx.alive()) return;
   ctx.setTitle(x.name);
-  const url = (f) => exampleAsset(id, f);
+  // 照片可以放在範例資料夾，或用 Wikimedia Commons 等公開授權來源的網址
+  const url = (f) => (/^https?:\/\//.test(f) ? f : exampleAsset(id, f));
   const link = (key) => x.sources[key] && h("a", { href: x.sources[key].url, target: "_blank", rel: "noopener" }, x.sources[key].label);
   const credit = (p) => [p.author && `攝影：${p.author}`, p.license].filter(Boolean).join("・");
+  // 授權標示（CC 要求：作者、授權、來源）
+  const creditLine = (p) => h("div", {}, [
+    p.caption && `${p.caption}｜`,
+    p.author && `攝影：${p.author}・`,
+    p.licenseUrl ? h("a", { href: p.licenseUrl, target: "_blank", rel: "noopener" }, p.license) : p.license,
+    p.source && "・", p.source && h("a", { href: p.source, target: "_blank", rel: "noopener" }, "原始檔案"),
+  ]);
 
   // 所有照片依時間排列，點任一張都能左右滑動看整個變化
   const entries = x.entries;
   const photos = entries.flatMap((e) => e.photos.map((p) => ({ ...p, when: p.date ? fmtWhen(p.date) : whenOf(e) })));
   const items = photos.map((p) => ({ url: url(p.file), label: p.when, caption: [p.caption, credit(p)].filter(Boolean).join("　") }));
   const view = (p) => () => openViewer(items, photos.indexOf(p));
-  const cover = photos[photos.length - 1];
+  const cover = photos.find((p) => p.cover) || photos[photos.length - 1];
 
   const header = h("div", { class: "tree-hero" }, [
     cover
-      ? h("div", { class: "hero-cover", onclick: view(cover) }, h("img", { src: url(cover.file), alt: x.name }))
+      ? h("div", { class: "hero-cover", onclick: view(cover) }, h("img", { src: url(cover.file), alt: x.name, referrerpolicy: "no-referrer" }))
       : h("div", { class: "hero-cover empty-cover" }, enso()),
     h("div", { class: "hero-body" }, [
       x.uid && h("div", { class: "hero-uid static" }, [h("span", { class: "k" }, "身分證"), h("span", { class: "v" }, x.uid)]),
@@ -48,11 +56,12 @@ export async function renderExample(el, ctx) {
     ]),
   ]);
 
-  const tools = photos.length > 1
-    ? h("div", { class: "row tools" }, [
-        h("button", { class: "btn", onclick: () => openViewer(items, 0) }, [icon("play"), `依時間看照片 ${photos.length} 張`]),
-      ])
-    : x.photoNote && h("div", { class: "notice" }, x.photoNote);
+  const tools = h("div", {}, [
+    photos.length > 1 && h("div", { class: "row tools" }, [
+      h("button", { class: "btn", onclick: () => openViewer(items, 0) }, [icon("play"), `依時間看照片 ${photos.length} 張`]),
+    ]),
+    x.photoNote && h("div", { class: "notice" }, x.photoNote),
+  ]);
 
   // 時間軸：新的在上
   const newest = [...entries].reverse();
@@ -70,11 +79,11 @@ export async function renderExample(el, ctx) {
         e.tags?.length && h("div", { class: "tags" }, e.tags.map((t) => h("span", { class: "tag" }, t))),
         e.photos.length && h("div", { class: "tl-thumbs" }, e.photos.map((p) => {
           const ph = photos.find((q) => q.file === p.file);
-          return h("button", { class: "thumb-btn", onclick: view(ph), "aria-label": "看照片" }, h("img", { class: "thumb", src: url(p.thumb || p.file), alt: "", loading: "lazy" }));
+          return h("button", { class: "thumb-btn", onclick: view(ph), "aria-label": "看照片" }, h("img", { class: "thumb", src: url(p.thumb || p.file), alt: p.caption || "", loading: "lazy", referrerpolicy: "no-referrer" }));
         })),
         e.videos?.length && h("div", { class: "tl-videos" }, e.videos.map(videoBox)),
         e.note && h("div", { class: "tl-note full" }, e.note),
-        e.photos.some((p) => p.author) && h("div", { class: "tl-credit" }, e.photos.map(credit).filter(Boolean).join("；")),
+        e.photos.some((p) => p.author) && h("div", { class: "tl-credit" }, e.photos.map(creditLine)),
         e.sources?.length && h("div", { class: "tl-src" }, e.sources.map(link).filter(Boolean)),
       ]),
     ]);

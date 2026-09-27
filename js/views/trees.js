@@ -73,7 +73,7 @@ function exampleStrip() {
   return h("div", { class: "examples" }, [
     sectionTitle("名木範例", "MASTERPIECE"),
     ...EXAMPLES.map((x) => h("a", { class: "list-item example-item", href: `#/example/${x.id}` }, [
-      x.cover ? h("img", { class: "thumb", src: exampleAsset(x.id, x.cover), alt: "", loading: "lazy" }) : h("span", { class: "thumb ph" }, enso()),
+      x.cover ? h("img", { class: "thumb", src: /^https?:/.test(x.cover) ? x.cover : exampleAsset(x.id, x.cover), alt: "", loading: "lazy", referrerpolicy: "no-referrer" }) : h("span", { class: "thumb ph" }, enso()),
       h("div", { class: "grow" }, [
         x.uid && h("div", { class: "tree-no" }, x.uid),
         h("div", { class: "title" }, x.name),
