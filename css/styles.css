@@ -304,7 +304,8 @@ textarea { resize: vertical; line-height: 1.7; }
 .hero-uid.static { cursor: default; }
 .tl-note.full { display: block; -webkit-line-clamp: unset; overflow: visible; }
 .thumb-btn { padding: 0; border: none; background: none; cursor: zoom-in; }
-.tl-credit { font-size: 11px; color: var(--stone); margin-top: 6px; }
+.tl-credit { font-size: 11px; color: var(--stone); margin-top: 6px; display: flex; flex-direction: column; gap: 2px; }
+.tl-credit a { color: var(--stone); text-decoration: underline; text-underline-offset: 2px; }
 .tl-src { display: flex; flex-direction: column; gap: 2px; margin-top: 8px; font-size: 11px; }
 .tl-src a, .example-sources a { color: var(--stone); text-decoration: underline; text-underline-offset: 2px; word-break: break-all; }
 .example-sources > div { font-size: 13px; padding: 3px 0; }
