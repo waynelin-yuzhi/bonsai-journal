@@ -1,0 +1,60 @@
+{
+  "id": "toryu",
+  "uid": "BJ-KMRA-TRYN",
+  "name": "登龍の舞",
+  "subtitle": "木村正彥代表作・內閣總理大臣賞",
+  "species": "真柏",
+  "category": "柏",
+  "latin": "Juniperus chinensis 'Shimpaku'",
+  "location": "木村正彥盆栽園（埼玉縣伊奈町）",
+  "stats": [["樹齡", "千年以上*"], ["創作者", "木村正彥"], ["獎項", "總理大臣賞"]],
+  "statsNote": "*樹齡為媒體報導的推估。",
+  "intro": "「盆栽界的魔術師」木村正彥最具代表性的真柏。原本長在懸崖上，山採下來後經木村改作，在日本盆栽作風展拿下內閣總理大臣賞，還由當時的首相竹下登命名。它展示了盆栽的另一種一生：素材被發現、被改作、被命名。",
+  "photoNote": "這件作品的照片版權屬於木村正彥與各刊物，App 不收錄；可以到下方「資料來源」的連結看照片。",
+  "lineage": [
+    { "name": "自然", "from": "", "to": "山採", "note": "自生", "detail": "長在懸崖上" },
+    { "name": "木村正彥", "from": "山採", "to": null, "note": "山採・改作", "detail": "埼玉縣伊奈町" }
+  ],
+  "entries": [
+    {
+      "when": "山採（年代不詳）",
+      "author": "木村正彥",
+      "tags": ["山採"],
+      "note": "原本長在懸崖上的真柏。三個人在難以站穩的崖邊一點一點敲開岩石，連根取下。媒體報導推估樹齡超過千年。",
+      "photos": [],
+      "sources": ["jins", "entax"]
+    },
+    {
+      "when": "改作",
+      "author": "木村正彥",
+      "tags": ["改作"],
+      "note": "木村看到這段樹幹，腦中浮現了樹形，兩天就把它做出來（木村受訪時所述）。據報導，從找到素材到完成，前後約花了 38 年持續調整。",
+      "photos": [],
+      "sources": ["jins", "entax"]
+    },
+    {
+      "when": "1987–1989",
+      "author": "木村正彥",
+      "tags": ["內閣總理大臣賞", "命名"],
+      "note": "在日本盆栽作風展獲得內閣總理大臣賞。當時還沒有銘，首相竹下登看到後主動為它命名，取自己名字裡的「登」，稱為「登龍の舞」。確切年份未查到，落在竹下登擔任首相的 1987–1989 年間。",
+      "photos": [],
+      "sources": ["ina", "entax"]
+    },
+    {
+      "when": "2026.04",
+      "year": 2026,
+      "author": "木村正彥",
+      "tags": ["展示"],
+      "note": "仍在木村正彥位於埼玉縣伊奈町的盆栽園，是園內最有名的一盆。",
+      "photos": [],
+      "sources": ["bt"]
+    }
+  ],
+  "sources": {
+    "jins": { "label": "JINS PARK：82 歳の異端の職人・木村正彦（受訪）", "url": "https://park.jins.com/series/mirunokaitakusya/08kimuramasahiko/" },
+    "entax": { "label": "entax：“盆栽界の魔術師”が手がけた樹齢1000年超えの盆栽", "url": "https://www.entax.news/post/202310011530.html" },
+    "ina": { "label": "広報いな「今月の表紙 銘『登龍の舞』」", "url": "https://www.town.saitama-ina.lg.jp/cmsfiles/contents/0000005/5937/P4-5.pdf" },
+    "bt": { "label": "Bonsai Tonight：A visit to Masahiko Kimura's garden（2026.04.25，有照片）", "url": "https://bonsaitonight.com/2026/04/25/a-visit-to-masahiko-kimuras-garden/" },
+    "wiki": { "label": "Wikipedia：Masahiko Kimura (bonsai artist)", "url": "https://en.wikipedia.org/wiki/Masahiko_Kimura_(bonsai_artist)" }
+  }
+}

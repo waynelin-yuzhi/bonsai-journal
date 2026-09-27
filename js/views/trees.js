@@ -77,7 +77,7 @@ function exampleStrip() {
       h("div", { class: "grow" }, [
         h("div", { class: "tree-no" }, x.uid),
         h("div", { class: "title" }, x.name),
-        h("div", { class: "sub" }, `${x.tag} · ${x.since} — 今`),
+        h("div", { class: "sub" }, `${x.tag} · ${x.period}`),
         h("div", { class: "sub" }, x.subtitle),
       ]),
       icon("forward"),

@@ -4,9 +4,12 @@ import { icon, enso } from "../icons.js";
 import { loadExample, exampleAsset } from "../examples.js";
 import { openViewer } from "../viewer.js";
 
-// 年代可能只有年或年月：1625、1945-08-06 → 1945.08.06
+// 每筆紀錄依 JSON 的順序（由舊到新）。date 可以只有年或年月（1625、1945-08-06）；
+// 年代不詳的用 when 顯示文字，year 用來算「距上次幾年」
 const fmtWhen = (d) => (d ? d.replace(/-/g, ".") : "");
 const yearOf = (d) => +String(d).slice(0, 4);
+const whenOf = (e) => e.when || fmtWhen(e.date);
+const yearNum = (e) => e.year ?? (e.date ? yearOf(e.date) : null);
 
 export async function renderExample(el, ctx) {
   const [id] = ctx.params;
@@ -19,9 +22,9 @@ export async function renderExample(el, ctx) {
   const credit = (p) => [p.author && `攝影：${p.author}`, p.license].filter(Boolean).join("・");
 
   // 所有照片依時間排列，點任一張都能左右滑動看整個變化
-  const entries = [...x.entries].sort((a, b) => a.date.localeCompare(b.date));
-  const photos = entries.flatMap((e) => e.photos.map((p) => ({ ...p, when: p.date || e.date })));
-  const items = photos.map((p) => ({ url: url(p.file), label: fmtWhen(p.when), caption: [p.caption, credit(p)].filter(Boolean).join("　") }));
+  const entries = x.entries;
+  const photos = entries.flatMap((e) => e.photos.map((p) => ({ ...p, when: p.date ? fmtWhen(p.date) : whenOf(e) })));
+  const items = photos.map((p) => ({ url: url(p.file), label: p.when, caption: [p.caption, credit(p)].filter(Boolean).join("　") }));
   const view = (p) => () => openViewer(items, photos.indexOf(p));
   const cover = photos[photos.length - 1];
 
@@ -33,31 +36,34 @@ export async function renderExample(el, ctx) {
       h("div", { class: "hero-uid static" }, [h("span", { class: "k" }, "身分證"), h("span", { class: "v" }, x.uid)]),
       h("div", { class: "hero-title" }, [x.name, h("span", { class: "code" }, "名木範例")]),
       h("div", { class: "hero-facts" }, [`${x.category}・${x.species}`, x.subtitle].join(" · ")),
-      h("div", { class: "hero-stats" }, [
+      h("div", { class: "hero-stats" }, (x.stats || [
         ["培育", `${new Date().getFullYear() - yearOf(x.since)} 年`],
         ["紀錄", `${entries.length} 筆`],
         ["傳承", `${x.lineage.length} 段`],
-      ].map(([k, v]) => h("div", {}, [h("div", { class: "v" }, v), h("div", { class: "k" }, k)]))),
-      h("div", { class: "hero-line" }, `學名：${x.latin}`),
+      ]).map(([k, v]) => h("div", {}, [h("div", { class: "v" }, v), h("div", { class: "k" }, k)]))),
+      x.statsNote && h("div", { class: "hint" }, x.statsNote),
+      x.latin && h("div", { class: "hero-line" }, `學名：${x.latin}`),
       h("div", { class: "hero-line" }, `所在：${x.location}`),
       h("div", { class: "hero-note" }, x.intro),
     ]),
   ]);
 
-  const tools = photos.length > 1 && h("div", { class: "row tools" }, [
-    h("button", { class: "btn", onclick: () => openViewer(items, 0) }, [icon("play"), `依時間看照片 ${photos.length} 張`]),
-  ]);
+  const tools = photos.length > 1
+    ? h("div", { class: "row tools" }, [
+        h("button", { class: "btn", onclick: () => openViewer(items, 0) }, [icon("play"), `依時間看照片 ${photos.length} 張`]),
+      ])
+    : !photos.length && x.photoNote && h("div", { class: "notice" }, x.photoNote);
 
   // 時間軸：新的在上
   const newest = [...entries].reverse();
   const timeline = h("div", { class: "timeline" }, newest.map((e, i) => {
     const prev = newest[i + 1];
-    const gap = prev ? yearOf(e.date) - yearOf(prev.date) : null;
+    const gap = prev && yearNum(e) && yearNum(prev) ? yearNum(e) - yearNum(prev) : null;
     return h("div", { class: "tl-item" }, [
       h("div", { class: "tl-dot" }),
       h("div", { class: "tl-card" }, [
         h("div", { class: "tl-head" }, [
-          h("span", {}, [h("span", { class: "tl-no" }, `#${String(newest.length - i).padStart(2, "0")}`), h("span", { class: "tl-date" }, fmtWhen(e.date))]),
+          h("span", {}, [h("span", { class: "tl-no" }, `#${String(newest.length - i).padStart(2, "0")}`), h("span", { class: "tl-date" }, whenOf(e))]),
           gap > 0 && h("span", { class: "tl-gap" }, `距上次 ${gap} 年`),
         ]),
         e.author && h("div", { class: "tl-author" }, e.author),
@@ -77,7 +83,7 @@ export async function renderExample(el, ctx) {
     h("div", { class: "lin-no" }, String(i + 1).padStart(2, "0")),
     h("div", { class: "lin-body" }, [
       h("div", { class: "lin-name" }, [c.name, c.note && h("span", { class: "tag" }, c.note)]),
-      h("div", { class: "lin-date" }, `${fmtWhen(c.from)} — ${c.to ? fmtWhen(c.to) : "現在"}${c.detail ? `・${c.detail}` : ""}`),
+      h("div", { class: "lin-date" }, [[fmtWhen(c.from), c.to ? fmtWhen(c.to) : "現在"].filter(Boolean).join(" — "), c.detail && `・${c.detail}`].filter(Boolean).join("")),
     ]),
   ])));
 
