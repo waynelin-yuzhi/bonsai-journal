@@ -1,8 +1,8 @@
-// 設定：帳號與創作者名稱、樹種與作業項目管理、匯出備份
+// 設定：帳號與創作者名稱、樹種與作業項目管理、匯出備份、問題反饋、版本與更新紀錄
 import {
   listSpecies, addSpecies, deleteSpecies, listOperationTypes, addOperationType, deleteOperationType,
   currentEmail, signOut, changePassword, exportData, downloadPhoto, getMyProfile, saveMyProfile, creatorNames, myId,
-  updateSpecies,
+  updateSpecies, myFeedback, amIAdmin,
 } from "../db.js";
 import { h, loading, toast, busy, confirmDialog, sheet, field, today, sectionTitle, treeTitle } from "../ui.js";
 import { icon, enso } from "../icons.js";
@@ -11,10 +11,24 @@ import { runningVersion, checkForUpdate } from "../update.js";
 import { isStandalone, canInstall, isIOS, promptInstall, onInstallChange } from "../install.js";
 import { isNativeApp, nativeBuild, WEB_URL, APK_URL } from "../platform.js";
 import { checkApkUpdate, versionName } from "../apk-update.js";
+import { openFeedbackForm, myFeedbackList } from "./feedback.js";
+
+// 更新紀錄：changelog.json（新的在前）
+async function loadChangelog() {
+  try {
+    const res = await fetch("./changelog.json", { cache: "no-cache" });
+    return res.ok ? await res.json() : [];
+  } catch {
+    return [];
+  }
+}
 
 export async function renderSettings(el, ctx) {
   el.append(loading());
-  const [email, species, opTypes, profile] = await Promise.all([currentEmail(), listSpecies(), listOperationTypes(), getMyProfile()]);
+  const [email, species, opTypes, profile, feedback, admin, changelog] = await Promise.all([
+    currentEmail(), listSpecies(), listOperationTypes(), getMyProfile(),
+    myFeedback().catch(() => []), amIAdmin(), loadChangelog(),
+  ]);
   if (!ctx.alive()) return;
   const refresh = () => { el.replaceChildren(); renderSettings(el, ctx); };
 
@@ -116,19 +130,49 @@ export async function renderSettings(el, ctx) {
         ]),
     sectionTitle("安裝 App", "INSTALL"),
     installCard(),
+    sectionTitle("問題反饋", "FEEDBACK"),
+    h("div", { class: "card" }, [
+      h("p", { class: "muted" }, "遇到問題，或有想新增、改善的地方，直接告訴我們。每一則都會評估並回覆處理進度。"),
+      h("div", { class: "row" }, [
+        h("button", { class: "btn", onclick: () => openFeedbackForm("bug", refresh) }, [icon("flag"), "回報問題"]),
+        h("button", { class: "btn", onclick: () => openFeedbackForm("idea", refresh) }, [icon("bulb"), "提供建議"]),
+      ]),
+      feedback.length > 0 && h("div", { class: "subhead" }, `我的反饋 ${feedback.length}`),
+      feedback.length > 0 && myFeedbackList(feedback),
+      admin && h("a", { class: "btn btn-block", href: "#/admin/feedback" }, [icon("inbox"), "反饋收件匣（管理員）"]),
+    ]),
     sectionTitle("版本", "VERSION"),
-    (() => {
-      const v = runningVersion();
-      return h("div", { class: "card row-between" }, [
+    versionCard(changelog),
+    h("div", { class: "about" }, [enso(), "BONSAI JOURNAL", h("br"), "盆栽創作紀錄 · EST. 2026"]),
+  );
+}
+
+// ---------- 版本與更新紀錄 ----------
+function versionCard(changelog) {
+  const v = runningVersion();
+  const card = h("div", { class: "card" });
+  let all = false;
+  const draw = () => {
+    const shown = all ? changelog : changelog.slice(0, 3);
+    card.replaceChildren(
+      h("div", { class: "row-between" }, [
         h("div", {}, [
-          h("div", { class: "mono" }, v ? `v${v.version}` : "—"),
+          h("div", { class: "mono version-now" }, v ? `v${v.version}` : "—"),
           v?.date && h("div", { class: "hint" }, `更新日期 ${v.date.replace(/-/g, ".")}`),
         ]),
         h("button", { class: "btn btn-sm", onclick: () => checkForUpdate({ manual: true }) }, [icon("refresh"), "檢查更新"]),
-      ]);
-    })(),
-    h("div", { class: "about" }, [enso(), "BONSAI JOURNAL", h("br"), "盆栽創作紀錄 · EST. 2026"]),
-  );
+      ]),
+      changelog.length > 0 && h("div", { class: "subhead" }, "更新紀錄"),
+      changelog.length > 0 && h("div", { class: "changelog" }, shown.map((c) => h("div", { class: "cl-item" + (c.version === v?.version ? " current" : "") }, [
+        h("div", { class: "cl-head" }, [h("span", { class: "mono" }, `v${c.version}`), h("span", { class: "cl-date" }, c.date.replace(/-/g, "."))]),
+        h("ul", {}, c.notes.map((n) => h("li", {}, n))),
+      ]))),
+      changelog.length > 3 && h("button", { class: "btn btn-ghost btn-sm btn-block", onclick: () => { all = !all; draw(); } },
+        all ? "收起" : `看全部 ${changelog.length} 次更新`),
+    );
+  };
+  draw();
+  return card;
 }
 
 // ---------- 安裝 App ----------

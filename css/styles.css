@@ -513,3 +513,48 @@ details.more[open] > summary { margin-bottom: 14px; }
 .install-banner .sub { font-size: 12px; color: var(--stone); }
 body.no-tabs .install-banner { bottom: calc(88px + var(--safe-b)); }
 .apk-banner { top: calc(70px + var(--safe-t)); bottom: auto; z-index: 45; }
+
+/* ---------- 問題反饋 ---------- */
+.fb-shot { margin: -4px 0 6px; }
+.fb-shot label.btn { cursor: pointer; }
+.fb-shot-preview { position: relative; width: 120px; border: 1px solid var(--line); }
+.fb-shot-preview img { width: 100%; max-height: 160px; object-fit: cover; object-position: top; display: block; }
+.fb-list { display: flex; flex-direction: column; gap: 10px; margin-top: 4px; }
+.fb-item { border: 1px solid var(--line); background: var(--paper); padding: 10px 12px; }
+.fb-item.admin { background: var(--card); }
+.fb-head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.fb-head .tag { margin: 0; }
+.fb-date { font-family: var(--mono); font-size: 11px; color: var(--stone); margin-left: auto; }
+.fb-status.s-new { border-color: var(--ink); color: var(--ink); }
+.fb-status.s-reviewing { border-color: var(--stone); color: var(--stone); }
+.fb-status.s-planned, .fb-status.s-done { border-color: var(--shu); color: var(--shu); }
+.fb-status.s-done { background: var(--shu-l); }
+.fb-msg { font-size: 14px; margin-top: 6px; white-space: pre-wrap; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.fb-msg.full { display: block; -webkit-line-clamp: unset; overflow: visible; }
+.fb-reply { margin-top: 8px; padding: 8px 10px; border-left: 3px solid var(--shu); background: var(--shu-l); font-size: 13px; display: flex; flex-direction: column; gap: 2px; }
+.fb-reply .k { font-size: 11px; color: var(--shu); letter-spacing: .15em; }
+.fb-who { font-size: 12px; color: var(--ink-2); margin-top: 4px; }
+.fb-meta { font-size: 11px; color: var(--stone); font-family: var(--mono); margin-top: 6px; word-break: break-all; }
+.fb-item .btn-sm { margin-top: 8px; }
+.fb-analysis { margin-top: 10px; padding: 10px; border: 1px solid var(--ink); background: var(--paper); }
+.fb-rec-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.fb-rec-row .tag { margin: 0; }
+.fb-rec { font-size: 12px; font-weight: 700; padding: 2px 10px; background: var(--ink); color: var(--paper); letter-spacing: .1em; }
+.fb-rec.go { background: var(--shu); }
+.fb-rec.no { background: var(--stone); }
+.fb-rec.ask { background: var(--paper-2); color: var(--ink); }
+.fb-a-summary { font-family: var(--serif); font-weight: 700; margin-top: 8px; }
+.fb-a-text { font-size: 13px; color: var(--ink-2); margin-top: 4px; white-space: pre-wrap; }
+.fb-controls { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+.fb-controls .field { margin-bottom: 0; }
+.fb-controls textarea { border: 1px solid var(--line); padding: 8px; background: var(--paper); font-size: 14px; }
+
+/* ---------- 版本與更新紀錄 ---------- */
+.version-now { font-size: 18px; }
+.changelog { display: flex; flex-direction: column; }
+.cl-item { padding: 8px 0; border-top: 1px solid var(--line); }
+.cl-item.current .mono { color: var(--shu); }
+.cl-head { display: flex; justify-content: space-between; align-items: baseline; font-size: 13px; }
+.cl-date { font-family: var(--mono); font-size: 11px; color: var(--stone); }
+.cl-item ul { margin: 4px 0 0; padding-left: 18px; font-size: 13px; color: var(--ink-2); }
+.cl-item li + li { margin-top: 2px; }
