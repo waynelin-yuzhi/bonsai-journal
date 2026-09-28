@@ -1,6 +1,8 @@
 // Android App 外殼更新通知：打開 App 時去 GitHub 查最新的 APK 打包編號，
-// 比手機上安裝的新就提示下載（桌面名稱、圖示、權限這類改動要裝新 APK 才會生效）。
-import { h, toast } from "./ui.js";
+// 比手機上安裝的新就提示更新（桌面名稱、圖示、權限這類改動要裝新 APK 才會生效）。
+//   · 新版外殼（有 ApkUpdater 原生外掛）：在 App 裡下載、顯示進度，下載完直接跳出系統安裝畫面
+//   · 舊版外殼：交給手機瀏覽器下載 APK
+import { h, toast, sheet } from "./ui.js";
 import { icon } from "./icons.js";
 import { nativeBuild, APK_URL } from "./platform.js";
 
@@ -64,12 +66,78 @@ function showBanner(latest) {
       h("div", { class: "sub" }, "下載後直接安裝，會覆蓋舊版，資料不受影響"),
     ]),
     h("button", { class: "btn btn-sm btn-ghost", onclick: () => { store.set(SKIP_KEY, String(latest)); banner.remove(); } }, "稍後"),
-    h("button", { class: "btn btn-sm btn-primary", onclick: () => { banner.remove(); downloadApk(); } }, [icon("download"), "下載"]),
+    h("button", { class: "btn btn-sm btn-primary", onclick: () => { banner.remove(); downloadApk(latest); } }, [icon("download"), "更新"]),
   ]);
   document.body.append(banner);
 }
 
-// App 會把外部網址交給手機瀏覽器開啟，由瀏覽器下載 APK
-export function downloadApk() {
-  location.href = APK_URL;
+const updater = () => window.Capacitor?.Plugins?.ApkUpdater || null;
+export const inAppUpdate = () => !!updater();
+const releaseApk = (build) => `https://github.com/waynelin-yuzhi/bonsai-journal/releases/download/android-${build}/bonsai-journal.apk`;
+
+// 更新 App：新版外殼在 App 裡下載安裝；舊版外殼（或 App 內更新失敗）交給手機瀏覽器下載
+export async function downloadApk(latest) {
+  const up = updater();
+  if (!up || !latest) { location.href = APK_URL; return; }
+  try {
+    if (!(await up.canInstall()).allowed && !(await allowInstall(up))) return;
+    await downloadWithProgress(up, latest);
+  } catch (err) {
+    console.warn("App 內更新失敗", err);
+    toast("App 內更新沒有成功，改用瀏覽器下載", "err");
+    setTimeout(() => { location.href = APK_URL; }, 1500);
+  }
+}
+
+// 第一次在 App 內更新：Android 要先允許這個 App「安裝不明應用程式」，從設定回來後自動繼續
+function allowInstall(up) {
+  return new Promise((resolve) => {
+    sheet("允許 App 安裝更新", (close) => h("div", {}, [
+      h("p", { class: "sheet-msg" }, "第一次在 App 裡更新，Android 需要你允許 Bonsai Journal 安裝更新。按「前往設定」打開「允許安裝」的開關，再回到 App 就會自動開始下載。之後更新都不用再設定。"),
+      h("div", { class: "row" }, [
+        h("button", { class: "btn btn-block", onclick: () => { close(); resolve(false); } }, "取消"),
+        h("button", { class: "btn btn-primary btn-block", onclick: async () => {
+          close();
+          const back = new Promise((r) => {
+            const on = () => { if (document.visibilityState === "visible") { document.removeEventListener("visibilitychange", on); r(); } };
+            document.addEventListener("visibilitychange", on);
+          });
+          await up.openInstallSettings();
+          await back;
+          const { allowed } = await up.canInstall();
+          if (!allowed) toast("還沒允許安裝，之後可以再按一次更新", "err");
+          resolve(allowed);
+        } }, "前往設定"),
+      ]),
+    ]));
+  });
+}
+
+// 下載進度視窗；下載完成後系統會跳出安裝畫面
+async function downloadWithProgress(up, latest) {
+  const fill = h("div", { class: "dl-fill" });
+  const text = h("div", { class: "dl-text" }, "準備下載…");
+  const overlay = h("div", { class: "busy-overlay" }, h("div", { class: "busy-card dl-card" }, [
+    h("div", { class: "dl-title" }, `下載新版 App ${versionName(latest)}`),
+    h("div", { class: "dl-bar" }, fill),
+    text,
+  ]));
+  document.getElementById("modal-root").append(overlay);
+  const mb = (n) => (n / 1048576).toFixed(1);
+  const listener = up.addListener("progress", ({ loaded, total }) => {
+    const pct = total > 0 ? Math.min(100, Math.round((loaded / total) * 100)) : 0;
+    fill.style.width = `${pct}%`;
+    text.textContent = total > 0 ? `${mb(loaded)} / ${mb(total)} MB` : `${mb(loaded)} MB`;
+  });
+  try {
+    await up.downloadAndInstall({ url: releaseApk(latest) });
+    fill.style.width = "100%";
+    text.textContent = "下載完成，請在系統畫面按「安裝」";
+    setTimeout(() => overlay.remove(), 4000);
+  } catch (err) {
+    overlay.remove();
+    throw err;
+  } finally {
+    Promise.resolve(listener).then((l) => l?.remove?.()).catch(() => {});
+  }
 }

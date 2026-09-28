@@ -115,6 +115,12 @@ icons/                  App 圖示
   - 第一次安裝時，Android 會詢問是否允許「安裝不明來源的應用程式」，允許即可
   - App 是開啟線上版的外殼（`android-app/`，Capacitor），一般改版不用重新安裝；只有 `android-app/` 改變時，GitHub Actions 才會重新打包並發佈到 Releases
   - 外殼內建本機通知外掛（`@capacitor/local-notifications`），通知小圖示是 `android-app/res/drawable/ic_stat_bonsai.xml`
+  - **App 內更新**：有新版外殼時跳出「更新」，在 App 裡下載（顯示進度）後直接跳出系統安裝畫面，不用另外開瀏覽器
+    - 原生程式在 `android-app/native/`（`ApkUpdaterPlugin.java`、`MainActivity.java`），打包時複製進 Android 專案
+    - 只下載本專案 GitHub Releases 的 APK；簽名和舊版不同時系統會拒絕安裝
+    - 第一次要允許「安裝不明應用程式」（App 會帶到設定頁，回來自動繼續）；Android 一定會顯示系統的「安裝」確認
+    - 舊版外殼或 App 內下載失敗時，改用瀏覽器下載
+  - 改到 `android-app/` 的 Pull Request 會先打包檢查（不發佈），合併到 `main` 才發佈新版
   - 在 App 裡點照片會先選「拍照」或「從相簿選」；匯出備份需用瀏覽器開網頁版
   - 簽名用 `android-app/keystore/debug.keystore`（測試用金鑰，不是機密）；日後要上架 Google Play 時，改用私人金鑰並存在 GitHub Secrets
 - **其他方式**：Chrome 開啟網址時會跳出「安裝成 App」提示；iPhone 用 Safari 分享選單「加入主畫面」

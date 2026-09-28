@@ -1,11 +1,16 @@
 # 打包 Android App（APK）並發佈到 GitHub Releases。
 # App 本身只是開啟線上版的外殼，所以一般改版不用重新打包；
-# 只有 android-app/ 裡的設定、圖示改變時才會自動重新打包（也可以在 Actions 頁手動執行）。
+# 只有 android-app/ 裡的設定、圖示、原生程式改變時才會自動重新打包（也可以在 Actions 頁手動執行）。
+# Pull Request 只打包檢查、不發佈，確認能編譯再合併。
 name: Android APK
 
 on:
   push:
     branches: [main]
+    paths:
+      - "android-app/**"
+      - ".github/workflows/android.yml"
+  pull_request:
     paths:
       - "android-app/**"
       - ".github/workflows/android.yml"
@@ -43,8 +48,16 @@ jobs:
           npx cap add android
           # App 圖示
           cp -r res/. android/app/src/main/res/
-          # 相機權限（在 App 裡拍照用）
-          sed -i 's#</manifest>#    <uses-permission android:name="android.permission.CAMERA" />\n</manifest>#' android/app/src/main/AndroidManifest.xml
+          # App 自己的原生程式：App 內更新（ApkUpdaterPlugin），MainActivity 註冊外掛
+          pkg=android/app/src/main/java/com/yuzhiplant/bonsaijournal
+          test -f $pkg/MainActivity.java
+          cp native/*.java $pkg/
+          grep -q "registerPlugin(ApkUpdaterPlugin.class)" $pkg/MainActivity.java
+          # 權限：相機（在 App 裡拍照）、安裝更新（App 內下載新版後交給系統安裝）
+          sed -i 's#</manifest>#    <uses-permission android:name="android.permission.CAMERA" />\n    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />\n</manifest>#' android/app/src/main/AndroidManifest.xml
+          grep -q "REQUEST_INSTALL_PACKAGES" android/app/src/main/AndroidManifest.xml
+          # App 內更新下載的安裝檔放在 cache，要能透過 FileProvider 交給系統安裝
+          grep -q "cache-path" android/app/src/main/res/xml/file_paths.xml
           # 版本號每次遞增，新版可以直接覆蓋安裝
           sed -i "s/versionCode 1$/versionCode ${{ github.run_number }}/; s/versionName \"1.0\"/versionName \"1.0.${{ github.run_number }}\"/" android/app/build.gradle
           npx cap sync android
@@ -84,7 +97,16 @@ jobs:
           echo "apk:      $got"
           test -n "$want" && test "$want" = "$got"
 
+      - name: 保留測試用 APK（Pull Request）
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: bonsai-journal-apk
+          path: android-app/bonsai-journal.apk
+          retention-days: 3
+
       - name: 發佈到 Releases
+        if: github.event_name != 'pull_request'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: android-${{ github.run_number }}
