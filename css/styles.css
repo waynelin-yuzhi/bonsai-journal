@@ -619,3 +619,10 @@ body.no-tabs .install-banner { bottom: calc(88px + var(--safe-b)); }
 .rem-check-row input { width: 18px; height: 18px; accent-color: var(--ink); flex: 0 0 auto; }
 .rem-check-row .grow { flex: 1; min-width: 0; }
 .rem-check-due { font-size: 11px; color: var(--stone); font-family: var(--mono); white-space: nowrap; }
+
+/* ---------- App 內更新：下載進度 ---------- */
+.dl-card { width: 300px; align-items: stretch; gap: 0; text-align: left; }
+.dl-title { font-family: var(--serif); font-weight: 700; font-size: 16px; margin-bottom: 14px; letter-spacing: .06em; }
+.dl-bar { height: 6px; background: var(--paper-2); overflow: hidden; }
+.dl-fill { height: 100%; width: 0; background: var(--ink); transition: width .2s linear; }
+.dl-text { font-family: var(--mono); font-size: 12px; color: var(--stone); margin-top: 10px; }
