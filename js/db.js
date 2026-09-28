@@ -130,6 +130,44 @@ export async function deleteEntry(id) {
   await removeFiles(photos.flatMap((p) => [p.path, p.thumb_path])).catch((err) => console.warn(err));
 }
 
+// ---------- 提醒：紀錄裡的「下次預計」----------
+// 完成（next_done_at）、延後（next_snoozed_to）由資料庫函式 set_reminder 設定，前任創作者留下的提醒也能處理
+const REMINDER = "id, tree_id, owner_id, entry_date, operations, next_action, next_date, next_snoozed_to, next_done_at";
+const REMINDER_TREE = "trees!entries_tree_id_fkey!inner(id, uid, name, code, status, species_id, species(name, category))";
+
+// 還沒完成的提醒（不含已封存的盆栽）
+export async function openReminders() {
+  return unwrap(
+    await supabase.from("entries").select(`${REMINDER}, ${REMINDER_TREE}`)
+      .not("next_date", "is", null).is("next_done_at", null)
+      .eq("trees.status", "active")
+  );
+}
+
+// 最近完成的提醒（可以復原）
+export async function doneReminders(days = 30) {
+  const since = new Date(Date.now() - days * 86400000).toISOString();
+  return unwrap(
+    await supabase.from("entries").select(`${REMINDER}, ${REMINDER_TREE}`)
+      .not("next_date", "is", null).gte("next_done_at", since)
+      .eq("trees.status", "active")
+      .order("next_done_at", { ascending: false })
+  );
+}
+
+// 某盆盆栽還沒完成的提醒（新增紀錄時可以一併完成）
+export async function treeOpenReminders(treeId) {
+  return unwrap(
+    await supabase.from("entries").select(REMINDER)
+      .eq("tree_id", treeId).not("next_date", "is", null).is("next_done_at", null)
+  );
+}
+
+// done：完成／復原；snooze：延後到哪一天（null＝照原訂日期）
+export async function setReminder(entryId, done, snooze = null) {
+  unwrap(await supabase.rpc("set_reminder", { p_entry: entryId, p_done: done, p_snooze: snooze }));
+}
+
 // ---------- 照片 ----------
 // 同一盆盆栽的所有照片（含紀錄日期），對比頁與「上次同角度」參考用
 export async function treePhotos(treeId) {

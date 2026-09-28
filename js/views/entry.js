@@ -1,9 +1,10 @@
 // 單筆紀錄：照片、作業、特徵、用材、備註
 import { getEntry, deleteEntry, myId, creatorNames } from "../db.js";
-import { h, loading, photoImg, hydratePhotos, fmtDate, confirmDialog, busy, toast, sectionTitle, creatorLabel, treeTitle } from "../ui.js";
+import { h, loading, photoImg, hydratePhotos, fmtDate, fmtDateTime, confirmDialog, busy, toast, sectionTitle, creatorLabel, treeTitle } from "../ui.js";
 import { icon } from "../icons.js";
 import { ANGLES, ANGLE_LABEL, VIGOR_LABEL } from "../constants.js";
 import { openViewer } from "../viewer.js";
+import { dueText, completeReminder, undoReminder, openSnooze } from "../reminders.js";
 
 export async function renderEntry(el, ctx) {
   const [id] = ctx.params;
@@ -14,6 +15,7 @@ export async function renderEntry(el, ctx) {
   const names = mine ? {} : await creatorNames([e.owner_id]);
   if (!ctx.alive()) return;
   const tree = e.trees;
+  const rerender = () => { el.replaceChildren(); renderEntry(el, ctx); };
   ctx.setTitle(treeTitle(tree));
   ctx.setParent(`#/tree/${tree.id}`);
   if (mine) ctx.setActions(h("a", { class: "icon-btn", href: `#/entry/${id}/edit`, title: "編輯", "aria-label": "編輯紀錄" }, icon("edit")));
@@ -52,9 +54,19 @@ export async function renderEntry(el, ctx) {
     !all.length && h("div", { class: "empty small" }, "這筆紀錄沒有照片"),
 
     e.note && h("div", { class: "card note" }, e.note),
-    e.next_action && h("div", { class: "card next" }, [
+    (e.next_action || e.next_date) && h("div", { class: "card next" + (e.next_done_at ? " done" : "") }, [
       h("div", { class: "k" }, "下次預計"),
-      h("div", {}, `${e.next_action}${e.next_date ? `（${fmtDate(e.next_date)}）` : ""}`),
+      h("div", {}, `${e.next_action || "預計的作業"}${e.next_date ? `（${fmtDate(e.next_date)}）` : ""}`),
+      // 有日期才是提醒：顯示狀態，盆栽目前的主人可以完成、延後或復原
+      e.next_date && h("div", { class: "next-state" }, e.next_done_at
+        ? `已完成 · ${fmtDateTime(e.next_done_at)}`
+        : `${dueText(e)}${e.next_snoozed_to ? ` · 延後到 ${fmtDate(e.next_snoozed_to)}` : ""}`),
+      e.next_date && h("div", { class: "rem-actions" }, e.next_done_at
+        ? [h("button", { class: "btn btn-sm", onclick: () => undoReminder(e, rerender) }, [icon("refresh"), "復原"])]
+        : [
+            h("button", { class: "btn btn-sm", onclick: () => completeReminder(e, rerender) }, [icon("check"), "完成"]),
+            h("button", { class: "btn btn-sm", onclick: () => openSnooze(e, rerender) }, [icon("clock"), "延後"]),
+          ]),
     ]),
     facts.length && h("div", { class: "card facts" }, facts.map(([k, v]) => h("div", {}, [h("div", { class: "v" }, v), h("div", { class: "k" }, k)]))),
     materials.length && h("div", { class: "card kv" }, materials.map(([k, v]) => h("div", { class: "kv-row" }, [h("span", { class: "k" }, k), h("span", {}, v)]))),

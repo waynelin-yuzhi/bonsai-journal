@@ -6,6 +6,8 @@ import { startUpdateCheck } from "./update.js";
 import { startApkUpdateCheck } from "./apk-update.js";
 import { initInstall } from "./install.js";
 import { hydrateIcons } from "./icons.js";
+import { refreshReminders, clearReminderBadge } from "./reminders.js";
+import { initNotify, clearNotifications } from "./notify.js";
 
 hydrateIcons();
 
@@ -17,11 +19,20 @@ const app = document.getElementById("app");
 const authMsg = document.getElementById("auth-msg");
 
 let routerStarted = false;
+let lastReminderCheck = 0;
+
+// 更新提醒數字與到期通知（登入、回到 App 時；短時間內不重複查）
+function checkReminders(minGap) {
+  if (Date.now() - lastReminderCheck < minGap) return;
+  lastReminderCheck = Date.now();
+  refreshReminders();
+}
 
 function showApp() {
   authScreen.classList.add("hidden");
   app.classList.remove("hidden");
   if (!routerStarted) { startRouter(); routerStarted = true; }
+  checkReminders(5 * 1000);
 }
 function showAuth() {
   app.classList.add("hidden");
@@ -41,9 +52,11 @@ async function init() {
   if (data.session) showApp();
   else showAuth();
 
-  supabase.auth.onAuthStateChange((_e, session) => {
+  supabase.auth.onAuthStateChange((event, session) => {
     if (session) showApp();
     else showAuth();
+    // 登出：清掉分頁數字和這支手機上排好的通知
+    if (event === "SIGNED_OUT") { clearReminderBadge(); clearNotifications(); }
   });
 }
 
@@ -78,6 +91,12 @@ pwEl.addEventListener("keydown", (e) => { if (e.key === "Enter") document.getEle
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(() => {}));
 }
+
+// 提醒：點通知打開提醒頁；回到 App 時更新到期數字與通知（最多 1 分鐘一次）
+initNotify();
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible" && !app.classList.contains("hidden")) checkReminders(60 * 1000);
+});
 
 init();
 startUpdateCheck();

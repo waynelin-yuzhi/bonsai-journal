@@ -1,6 +1,6 @@
 // 我的盆栽：作品列表（依分類篩選）+ 新增／編輯盆栽檔案 + 接收別人轉移的盆栽
 import { listTrees, listSpecies, saveTree, addSpecies, previewTransfer, acceptTransfer } from "../db.js";
-import { h, sheet, field, loading, toast, busy, photoImg, hydratePhotos, fmtDate, fmtDateTime, today, treeTitle, speciesTag, sectionTitle } from "../ui.js";
+import { h, sheet, field, loading, toast, busy, photoImg, hydratePhotos, fmtDate, fmtDateTime, today, daysBetween, treeTitle, speciesTag, sectionTitle } from "../ui.js";
 import { SOURCES, CATEGORIES, GROUPS, groupOf } from "../constants.js";
 import { icon, enso } from "../icons.js";
 import { EXAMPLES, exampleAsset } from "../examples.js";
@@ -59,7 +59,13 @@ export async function renderTrees(el, ctx) {
         h("button", { class: "btn", onclick: () => openReceive() }, [icon("inbox"), "接收別人轉給你的盆栽"]),
       ]);
 
-    content.replaceChildren(...(trees.length ? [row1, row2, grid].filter(Boolean) : [empty]), exampleStrip());
+    // 有到期（含過期）提醒的盆栽：列表最上面提示，點了到提醒頁
+    const dueTrees = active.filter((t) => t.next_due && t.next_due <= today()).length;
+    const banner = dueTrees > 0 && h("a", { class: "rem-banner", href: "#/reminders" }, [
+      icon("bell"), h("span", { class: "grow" }, `${dueTrees} 盆盆栽有到期的提醒`), icon("forward"),
+    ]);
+
+    content.replaceChildren(...(trees.length ? [banner, row1, row2, grid].filter(Boolean) : [empty]), exampleStrip());
     hydratePhotos(content);
   };
 
@@ -96,8 +102,17 @@ function treeCard(t) {
       h("div", { class: "tree-meta" }, t.entry_count
         ? `${t.entry_count} REC · ${fmtDate(t.last_entry_date)}`
         : "尚無紀錄"),
+      t.status === "active" && t.next_due && remTag(t.next_due),
     ]),
   ]);
+}
+
+// 下一個提醒：過期、今天用朱紅標出
+function remTag(due) {
+  const n = daysBetween(today(), due);
+  const [, m, d] = due.split("-");
+  const text = n < 0 ? `過期 · ${m}.${d}` : n === 0 ? "今天" : n === 1 ? "明天" : `${m}.${d}`;
+  return h("div", { class: "tree-rem" + (n <= 0 ? " due" : "") }, [icon("bell"), text]);
 }
 
 // 新增／編輯盆栽檔案（底部彈窗）

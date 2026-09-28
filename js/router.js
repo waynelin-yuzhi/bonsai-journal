@@ -1,4 +1,4 @@
-// 雜湊路由：#/trees、#/tree/:id、#/tree/:id/new、#/entry/:id、#/entry/:id/edit…
+// 雜湊路由：#/trees、#/tree/:id、#/tree/:id/new、#/entry/:id、#/entry/:id/edit、#/reminders…
 import { h } from "./ui.js";
 import { renderTrees, openReceive } from "./views/trees.js";
 import { renderTree } from "./views/tree.js";
@@ -9,6 +9,7 @@ import { renderRecent } from "./views/recent.js";
 import { renderSettings } from "./views/settings.js";
 import { renderExample } from "./views/example.js";
 import { renderFeedbackAdmin } from "./views/feedback.js";
+import { renderReminders } from "./views/reminders.js";
 
 const ID = "([0-9a-f-]{36})";
 const routes = [
@@ -22,6 +23,7 @@ const routes = [
   { re: new RegExp(`^entry/${ID}/edit$`), tab: "trees", eyebrow: "EDIT", title: "編輯紀錄", noTabs: true, parent: ([id]) => `#/entry/${id}`, render: (el, ctx) => renderEntryForm(el, { ...ctx, mode: "edit" }) },
   { re: /^example\/([a-z0-9-]+)$/, tab: "trees", eyebrow: "MASTERPIECE", title: "名木範例", parent: () => "#/trees", render: renderExample },
   { re: /^recent$/, tab: "recent", eyebrow: "TIMELINE", title: "最近紀錄", render: renderRecent },
+  { re: /^reminders$/, tab: "reminders", eyebrow: "REMINDERS", title: "提醒", render: renderReminders },
   { re: /^admin\/feedback$/, tab: "settings", eyebrow: "FEEDBACK", title: "反饋收件匣", parent: () => "#/settings", render: renderFeedbackAdmin },
   { re: /^settings$/, tab: "settings", eyebrow: "SETTINGS", title: "設定", render: renderSettings },
 ];

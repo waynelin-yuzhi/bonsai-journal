@@ -8,5 +8,11 @@
   },
   "android": {
     "appendUserAgent": "BonsaiJournalApp"
+  },
+  "plugins": {
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_bonsai",
+      "iconColor": "#151513"
+    }
   }
 }
