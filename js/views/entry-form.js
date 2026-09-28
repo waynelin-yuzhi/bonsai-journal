@@ -1,13 +1,15 @@
 // 新增／編輯紀錄：日期、五個角度＋細節照片、作業項目、備註、下次預計、整體特徵與用材
 import {
   getTree, getEntry, listOperationTypes, opsForSpecies, addOperationType, treePhotos,
-  saveEntry, uploadPhoto, updatePhoto, deletePhotos, myId,
+  saveEntry, uploadPhoto, updatePhoto, deletePhotos, myId, treeOpenReminders, setReminder,
 } from "../db.js";
 import { h, field, loading, toast, busy, confirmDialog, promptDialog, photoImg, hydratePhotos, fmtDate, today, sectionTitle, treeTitle } from "../ui.js";
 import { ANGLES, VIGOR_LABEL } from "../constants.js";
 import { prepareImage } from "../image.js";
 import { bindPhotoPicker } from "../picker.js";
 import { icon } from "../icons.js";
+import { QUICK_DATES, dueOf, dueText, byDue, refreshReminders, cachedReminders } from "../reminders.js";
+import { maybeAskNotify } from "../notify.js";
 
 export async function renderEntryForm(el, ctx) {
   const isEdit = ctx.mode === "edit";
@@ -23,7 +25,9 @@ export async function renderEntryForm(el, ctx) {
   } else {
     treeId = ctx.params[0];
   }
-  const [tree, opTypes, history] = await Promise.all([getTree(treeId), listOperationTypes(), treePhotos(treeId)]);
+  const [tree, opTypes, history, openRem] = await Promise.all([
+    getTree(treeId), listOperationTypes(), treePhotos(treeId), isEdit ? [] : treeOpenReminders(treeId),
+  ]);
   if (!ctx.alive()) return;
   ctx.setTitle(`${isEdit ? "編輯紀錄" : "新增紀錄"} · ${treeTitle(tree)}`);
 
@@ -182,7 +186,31 @@ export async function renderEntryForm(el, ctx) {
   const on = { oninput: touch };
   const note = h("textarea", { rows: "4", placeholder: "當下的想法、老師的建議、這次為什麼這樣處理…", ...on }, v(entry?.note));
   const nextAction = h("input", { type: "text", value: v(entry?.next_action), placeholder: "例：檢查咬線、開始施肥", ...on });
-  const nextDate = h("input", { type: "date", value: v(entry?.next_date), onchange: touch });
+  const nextDate = h("input", { type: "date", value: v(entry?.next_date) });
+  // 預計日期快選：從這筆紀錄的日期往後算
+  const quick = h("div", { class: "chips wrap quick-dates" });
+  const drawQuick = () => quick.replaceChildren(h("span", { class: "quick-k" }, "幾天後"), ...QUICK_DATES.map(([label, fn]) => {
+    const d = fn(date.value || today());
+    return h("button", {
+      class: "chip" + (nextDate.value === d ? " active" : ""),
+      onclick: () => { nextDate.value = d; touch(); drawQuick(); },
+    }, label);
+  }));
+  nextDate.addEventListener("change", () => { touch(); drawQuick(); });
+  date.addEventListener("change", drawQuick);
+  drawQuick();
+
+  // 這盆還沒完成的提醒：這次紀錄可以一併完成（到期的預設勾選）
+  const finish = new Set(openRem.filter((r) => dueOf(r) <= today()).map((r) => r.id));
+  const remBox = openRem.length > 0 && h("div", { class: "card rem-check" }, [...openRem].sort(byDue).map((r) => {
+    const cb = h("input", { type: "checkbox", checked: finish.has(r.id) });
+    cb.addEventListener("change", () => { cb.checked ? finish.add(r.id) : finish.delete(r.id); touch(); });
+    return h("label", { class: "rem-check-row" }, [
+      cb,
+      h("span", { class: "grow" }, r.next_action || "預計的作業"),
+      h("span", { class: "rem-check-due" }, `${fmtDate(dueOf(r)).slice(5)} · ${dueText(r)}`),
+    ]);
+  }));
   const num = (val, ph) => h("input", { type: "number", inputmode: "decimal", step: "0.1", min: "0", value: v(val), placeholder: ph, ...on });
   const height = num(entry?.height_cm, "cm");
   const width = num(entry?.width_cm, "cm");
@@ -237,6 +265,12 @@ export async function renderEntryForm(el, ctx) {
       });
       savedId = saved.id; // 萬一照片上傳中途失敗，重按儲存會更新同一筆，不會重複建立
 
+      // 一併完成勾選的提醒（完成過的就不再送，重按儲存不會重複）
+      for (const id of [...finish]) {
+        await setReminder(id, true);
+        finish.delete(id);
+      }
+
       // 先刪被換掉／移除的舊照
       const toRemove = [...Object.values(slots).map((s) => s.remove).filter(Boolean), ...removedDetails];
       if (toRemove.length) {
@@ -275,6 +309,8 @@ export async function renderEntryForm(el, ctx) {
       dirty = false;
       toast("已儲存", "ok");
       location.replace(`#/entry/${savedId}`);
+      // 更新提醒數字與通知；第一次設定預計日期時詢問要不要開到期通知
+      refreshReminders().then(() => { if (nextDate.value) maybeAskNotify(cachedReminders()); });
     } catch (err) {
       console.error(err);
       toast("儲存失敗：" + (err.message || err), "err");
@@ -287,6 +323,7 @@ export async function renderEntryForm(el, ctx) {
 
   el.replaceChildren(
     h("div", { class: "card" }, [field("日期", date)]),
+    ...(remBox ? [sectionTitle("這次一併完成", "REMINDERS"), remBox] : []),
     sectionTitle("照片", "PHOTOS"),
     h("div", { class: "card" }, [
       angleGrid,
@@ -305,6 +342,8 @@ export async function renderEntryForm(el, ctx) {
     h("div", { class: "card" }, [
       note,
       h("div", { class: "row" }, [field("下次預計", nextAction), field("預計日期", nextDate)]),
+      quick,
+      h("div", { class: "hint" }, "填了日期，到期當天會在「提醒」出現。"),
     ]),
     more,
     h("div", { class: "save-bar" }, h("button", { class: "btn btn-primary btn-block", onclick: save }, "儲存紀錄")),

@@ -846,6 +846,72 @@ revoke execute on function public.am_i_admin(), public.admin_feedback_list(),
 grant execute on function public.am_i_admin(), public.admin_feedback_list(),
   public.admin_feedback_update(uuid, text, text) to authenticated;
 
+-- ============================================================
+-- 提醒：紀錄裡的「下次預計」到期提醒
+--   · next_date 是寫紀錄時的計畫，屬於紀錄內容（前任創作者的紀錄唯讀）
+--   · 完成（next_done_at）、延後（next_snoozed_to）是目前主人的處理狀態，一律透過 set_reminder 設定
+--     → 接收別人轉來的盆栽，前任留下的提醒也能完成或延後，但不會改到前任寫的內容
+--   · 作者改了預計日期就當作新的計畫，完成與延後都清掉，重新提醒
+-- ============================================================
+alter table public.entries add column if not exists next_done_at    timestamptz;  -- 完成時間（空白＝還沒完成）
+alter table public.entries add column if not exists next_snoozed_to date;         -- 延後到哪一天（空白＝照原訂日期）
+
+create index if not exists entries_open_reminder_idx on public.entries (tree_id)
+  where next_date is not null and next_done_at is null;
+
+create or replace function private.entries_reminder_reset() returns trigger
+language plpgsql set search_path = '' as $$
+begin
+  if new.next_date is distinct from old.next_date then
+    new.next_done_at = null;
+    new.next_snoozed_to = null;
+  end if;
+  return new;
+end $$;
+drop trigger if exists entries_reminder_reset on public.entries;
+create trigger entries_reminder_reset before update on public.entries
+  for each row execute function private.entries_reminder_reset();
+
+-- 完成／復原／延後：盆栽目前的主人才能設定
+--   完成 set_reminder(id, true)（延後日保留）；復原 set_reminder(id, false, 原本的延後日)；延後 set_reminder(id, false, '2026-10-01')
+create or replace function public.set_reminder(p_entry uuid, p_done boolean, p_snooze date default null) returns void
+language plpgsql security definer set search_path = '' as $$
+begin
+  update public.entries e
+     set next_done_at    = case when p_done then coalesce(e.next_done_at, now()) end,
+         next_snoozed_to = case when p_done then e.next_snoozed_to else p_snooze end
+   where e.id = p_entry
+     and e.next_date is not null
+     and exists (select 1 from public.trees t where t.id = e.tree_id and t.owner_id = auth.uid());
+  if not found then raise exception '找不到這個提醒'; end if;
+end $$;
+revoke execute on function public.set_reminder(uuid, boolean, date) from public, anon;
+grant execute on function public.set_reminder(uuid, boolean, date) to authenticated;
+
+-- ---------- 總覽加上最近的提醒日期、未完成提醒數 ----------
+drop view if exists public.tree_overview;
+create view public.tree_overview with (security_invoker = true) as
+select
+  t.*,
+  s.name as species_name,
+  s.category as species_category,
+  (select count(*) from public.entries e where e.tree_id = t.id)          as entry_count,
+  (select max(e.entry_date) from public.entries e where e.tree_id = t.id) as last_entry_date,
+  (select p.thumb_path
+     from public.photos p
+     join public.entries e on e.id = p.entry_id
+    where p.tree_id = t.id
+    order by (p.angle = 'front') desc, e.entry_date desc, p.created_at desc
+    limit 1)                                                               as cover_thumb,
+  (select count(distinct c.owner_id) from public.tree_custody c where c.tree_id = t.id) as creator_count,
+  (select min(coalesce(e.next_snoozed_to, e.next_date)) from public.entries e
+    where e.tree_id = t.id and e.next_date is not null and e.next_done_at is null) as next_due,
+  (select count(*) from public.entries e
+    where e.tree_id = t.id and e.next_date is not null and e.next_done_at is null) as open_reminders
+from public.trees t
+left join public.species s on s.id = t.species_id;
+grant select on public.tree_overview to authenticated;
+
 revoke execute on all functions in schema private from public, anon, authenticated;
 grant execute on function private.tree_has_other_authors(uuid), private.photo_file_locked(text) to authenticated;
 grant execute on function private.is_admin() to authenticated;

@@ -5,7 +5,8 @@
   "description": "Bonsai Journal（盆栽創作紀錄）Android App 外殼（Capacitor），開啟線上版，改版不用重裝",
   "dependencies": {
     "@capacitor/android": "^7.0.0",
-    "@capacitor/core": "^7.0.0"
+    "@capacitor/core": "^7.0.0",
+    "@capacitor/local-notifications": "^7.0.7"
   },
   "devDependencies": {
     "@capacitor/cli": "^7.0.0"

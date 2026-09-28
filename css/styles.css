@@ -559,3 +559,63 @@ body.no-tabs .install-banner { bottom: calc(88px + var(--safe-b)); }
 .cl-date { font-family: var(--mono); font-size: 11px; color: var(--stone); }
 .cl-item ul { margin: 4px 0 0; padding-left: 18px; font-size: 13px; color: var(--ink-2); }
 .cl-item li + li { margin-top: 2px; }
+
+/* ---------- 提醒 ---------- */
+/* 分頁上的到期數字（過期＋今天） */
+.tab .badge {
+  position: absolute; top: 4px; left: calc(50% + 6px); min-width: 17px; height: 17px; padding: 0 4px;
+  background: var(--shu); color: #fff; font-family: var(--mono); font-size: 10px; font-weight: 500;
+  line-height: 17px; letter-spacing: 0; text-align: center;
+}
+.tab .badge.hidden { display: none; }
+.tab.active:has(.badge:not(.hidden))::after { display: none; }
+
+.rem-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 4px; }
+.rem-item { display: flex; background: var(--card); border: 1px solid var(--line); border-left: 3px solid var(--line-2); }
+.rem-item.overdue, .rem-item.today { border-left-color: var(--shu); }
+.rem-item.soon { border-left-color: var(--ink); }
+.rem-item.done { opacity: .72; }
+.rem-date { flex: 0 0 74px; padding: 12px 0 12px 12px; }
+.rem-md { font-family: var(--mono); font-size: 17px; font-weight: 500; letter-spacing: .02em; }
+.rem-left { font-size: 11px; color: var(--stone); margin-top: 2px; letter-spacing: .06em; }
+.rem-item.overdue .rem-left, .rem-item.today .rem-left { color: var(--shu); font-weight: 700; }
+.rem-body { flex: 1; min-width: 0; padding: 11px 12px 12px 4px; }
+.rem-tree { display: block; font-family: var(--serif); font-weight: 700; font-size: 15px; }
+.rem-sp { font-family: var(--sans); font-weight: 400; font-size: 11px; color: var(--stone); margin-left: 8px; letter-spacing: .06em; }
+.rem-action { font-size: 15px; margin-top: 2px; line-height: 1.5; }
+.rem-src { display: block; font-size: 11px; color: var(--stone); font-family: var(--mono); margin-top: 3px; }
+.rem-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.rem-actions .btn { flex: 0 0 auto; }
+.rem-done { margin-top: 26px; }
+.rem-done summary { cursor: pointer; font-size: 13px; color: var(--stone); letter-spacing: .12em; padding: 6px 0 10px; }
+.empty-hero.small { padding: 28px 20px 12px; }
+.empty-hero.small .enso { width: 88px; height: 88px; }
+
+/* 我的盆栽：到期提示、樹卡上的下一個提醒 */
+.rem-banner {
+  display: flex; align-items: center; gap: 10px; padding: 11px 12px; margin-bottom: 14px;
+  border: 1px solid var(--shu); background: var(--shu-l); color: var(--shu); font-size: 14px; font-weight: 700; letter-spacing: .06em;
+}
+.rem-banner .grow { flex: 1; }
+.rem-banner .ico { width: 18px; height: 18px; }
+.tree-rem { display: flex; align-items: center; gap: 4px; font-size: 11px; font-family: var(--mono); color: var(--stone); margin-top: 2px; }
+.tree-rem .ico { width: 12px; height: 12px; }
+.tree-rem.due { color: var(--shu); font-weight: 500; }
+
+/* 紀錄：提醒狀態、完成或延後；時間軸上已完成的淡掉 */
+.card.next.done { border-color: var(--line); background: var(--card); }
+.card.next.done .k { color: var(--stone); }
+.next-state { font-size: 12px; color: var(--shu); margin-top: 4px; letter-spacing: .04em; }
+.card.next.done .next-state { color: var(--stone); }
+.tl-next.done { color: var(--stone); }
+
+/* 新增紀錄：預計日期快選、一併完成提醒 */
+.quick-dates { align-items: center; margin-top: -4px; }
+.quick-dates .chip { padding: 4px 11px; font-size: 13px; }
+.quick-k { font-size: 12px; color: var(--stone); letter-spacing: .1em; margin-right: 2px; }
+.rem-check { padding: 6px 14px; }
+.rem-check-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 15px; cursor: pointer; }
+.rem-check-row:last-child { border-bottom: none; }
+.rem-check-row input { width: 18px; height: 18px; accent-color: var(--ink); flex: 0 0 auto; }
+.rem-check-row .grow { flex: 1; min-width: 0; }
+.rem-check-due { font-size: 11px; color: var(--stone); font-family: var(--mono); white-space: nowrap; }

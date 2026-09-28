@@ -1,4 +1,4 @@
-// 設定：帳號與創作者名稱、樹種與作業項目管理、匯出備份、問題反饋、版本與更新紀錄
+// 設定：帳號與創作者名稱、樹種與作業項目管理、到期通知、匯出備份、問題反饋、版本與更新紀錄
 import {
   listSpecies, addSpecies, deleteSpecies, listOperationTypes, addOperationType, deleteOperationType,
   currentEmail, signOut, changePassword, exportData, downloadPhoto, getMyProfile, saveMyProfile, creatorNames, myId,
@@ -12,6 +12,8 @@ import { isStandalone, canInstall, isIOS, promptInstall, onInstallChange } from 
 import { isNativeApp, nativeBuild, WEB_URL, APK_URL } from "../platform.js";
 import { checkApkUpdate, versionName } from "../apk-update.js";
 import { openFeedbackForm, myFeedbackList } from "./feedback.js";
+import { notifySupported, notifyPrefs, notifyPermission, enableNotify, disableNotify, setNotifyHour, testNotify } from "../notify.js";
+import { cachedReminders, refreshReminders } from "../reminders.js";
 
 // 更新紀錄：changelog.json（新的在前）
 async function loadChangelog() {
@@ -120,6 +122,8 @@ export async function renderSettings(el, ctx) {
     speciesCard,
     sectionTitle("作業項目", "OPERATIONS"),
     opsCard,
+    sectionTitle("到期通知", "NOTIFY"),
+    notifyCard(),
     sectionTitle("資料備份", "BACKUP"),
     h("div", { class: "card" }, isNativeApp()
       // Android App 裡沒辦法下載檔案，請改用瀏覽器開啟網頁版匯出
@@ -145,6 +149,67 @@ export async function renderSettings(el, ctx) {
     versionCard(changelog),
     h("div", { class: "about" }, [enso(), "BONSAI JOURNAL", h("br"), "盆栽創作紀錄 · EST. 2026"]),
   );
+}
+
+function reminderState(e) {
+  if (!e.next_date) return "";
+  if (e.next_done_at) return `已完成 ${e.next_done_at.slice(0, 10)}`;
+  return e.next_snoozed_to ? `延後到 ${e.next_snoozed_to}` : "未完成";
+}
+
+// ---------- 到期通知（Android App）----------
+function notifyCard() {
+  const card = h("div", { class: "card" });
+  const reminders = async () => cachedReminders() || (await refreshReminders()) || [];
+  const hourSelect = (p) => {
+    const sel = h("select", { "aria-label": "通知時間" }, Array.from({ length: 16 }, (_, i) => i + 6)
+      .map((hr) => h("option", { value: String(hr) }, `${String(hr).padStart(2, "0")}:00`)));
+    sel.value = String(p.hour);
+    sel.addEventListener("change", async () => {
+      await setNotifyHour(+sel.value, await reminders());
+      toast(`到期當天 ${sel.value} 點提醒`, "ok");
+    });
+    return sel;
+  };
+  const draw = async () => {
+    if (!notifySupported()) {
+      card.replaceChildren(...(isNativeApp()
+        ? [
+            h("p", { class: "muted" }, "更新 App 後可以開啟到期通知。"),
+            h("button", { class: "btn btn-block", onclick: () => checkApkUpdate({ manual: true }) }, [icon("refresh"), "檢查 App 更新"]),
+          ]
+        : [h("p", { class: "muted" }, "到期通知目前只支援 Android App。網頁版打開「提醒」分頁，一樣看得到到期的事項。")]));
+      return;
+    }
+    const p = notifyPrefs();
+    const permission = await notifyPermission();
+    if (permission === "denied") {
+      card.replaceChildren(h("p", { class: "muted" }, "通知權限被關閉了。請到手機「設定 → 應用程式 → Bonsai Journal → 通知」打開，再回來開啟。"));
+      return;
+    }
+    if (p.on && permission === "granted") {
+      card.replaceChildren(
+        h("div", { class: "install-state" }, [icon("check"), "到期通知已開啟"]),
+        field("通知時間", hourSelect(p), "提醒日期當天這個時間跳通知，同一天的會合併成一則。"),
+        h("div", { class: "row" }, [
+          h("button", { class: "btn", onclick: async () => { await testNotify(); toast("5 秒後會跳一則測試通知", "ok"); } }, [icon("bell"), "測試通知"]),
+          h("button", { class: "btn", onclick: async () => { await disableNotify(); toast("已關閉到期通知", "ok"); draw(); } }, "關閉通知"),
+        ]),
+      );
+      return;
+    }
+    card.replaceChildren(
+      h("p", { class: "muted" }, "紀錄裡填了「下次預計」的日期，到期當天會跳通知提醒你。"),
+      field("通知時間", hourSelect(p)),
+      h("button", { class: "btn btn-primary btn-block", onclick: async () => {
+        const ok = await enableNotify(await reminders());
+        toast(ok ? "已開啟到期通知" : "沒有取得通知權限", ok ? "ok" : "err");
+        draw();
+      } }, [icon("bell"), "開啟到期通知"]),
+    );
+  };
+  draw();
+  return card;
 }
 
 // ---------- 版本與更新紀錄 ----------
@@ -328,12 +393,12 @@ async function exportZip() {
       custom_operation_types: opTypes.filter((o) => o.owner_id),
     }, null, 2));
 
-    const head = ["身分證", "盆栽名稱", "自訂編號", "分類", "樹種", "作者", "日期", "作業項目", "備註", "下次預計", "預計日期", "樹高cm", "幅寬cm", "幹徑cm", "樹勢", "線材", "用土", "肥料／藥劑", "照片數"];
+    const head = ["身分證", "盆栽名稱", "自訂編號", "分類", "樹種", "作者", "日期", "作業項目", "備註", "下次預計", "預計日期", "提醒狀態", "樹高cm", "幅寬cm", "幹徑cm", "樹勢", "線材", "用土", "肥料／藥劑", "照片數"];
     const cell = (x) => `"${String(x ?? "").replace(/"/g, '""')}"`;
     const rows = entries.map((e) => {
       const t = treeById[e.tree_id] || {};
       return [
-        t.uid, t.name, t.code, CATEGORY_LABEL[t.species_category] || "", t.species_name, who(e.owner_id), e.entry_date, e.operations.join("、"), e.note, e.next_action, e.next_date,
+        t.uid, t.name, t.code, CATEGORY_LABEL[t.species_category] || "", t.species_name, who(e.owner_id), e.entry_date, e.operations.join("、"), e.note, e.next_action, e.next_date, reminderState(e),
         e.height_cm, e.width_cm, e.trunk_cm, e.vigor ? `${e.vigor} ${VIGOR_LABEL[e.vigor]}` : "",
         e.wire, e.soil, e.fertilizer, photos.filter((p) => p.entry_id === e.id).length,
       ].map(cell).join(",");

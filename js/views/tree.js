@@ -12,6 +12,7 @@ import { ANGLES } from "../constants.js";
 import { openTreeForm } from "./trees.js";
 import { openViewer } from "../viewer.js";
 import { WEB_URL } from "../platform.js";
+import { reminderRow, byDue, dueOf } from "../reminders.js";
 
 const ANGLE_ORDER = [...ANGLES.map((a) => a.key), "detail"];
 
@@ -72,6 +73,12 @@ export async function renderTree(el, ctx) {
     h("a", { class: "btn btn-primary", href: `#/tree/${id}/new` }, [icon("plus"), "新增紀錄"]),
   ]);
 
+  // 還沒完成的提醒（含前任創作者留下的）
+  const reminders = entries.filter((e) => e.next_date && !e.next_done_at)
+    .map((e) => ({ ...e, trees: tree })).sort(byDue);
+  const reminderBox = reminders.length > 0 && h("div", { class: "rem-list" },
+    reminders.map((r) => reminderRow(r, { showTree: false, onChange: rerender })));
+
   const timeline = entries.length
     ? h("div", { class: "timeline" }, entries.map((e, i) => timelineItem(e, entries[i + 1], entries.length - i, author(e))))
     : h("div", { class: "empty" }, [
@@ -113,6 +120,7 @@ export async function renderTree(el, ctx) {
 
   el.replaceChildren(
     header, tools,
+    ...(reminderBox ? [sectionTitle(`提醒 ${reminders.length}`, "REMINDERS"), reminderBox] : []),
     sectionTitle("時間軸", "TIMELINE"), timeline,
     sectionTitle("傳承", "LINEAGE"), lineageBox, transferBox,
     danger,
@@ -137,9 +145,16 @@ function timelineItem(e, prev, no, author) {
         photos.length > 5 && h("span", { class: "thumb more" }, `+${photos.length - 5}`),
       ]),
       e.note && h("div", { class: "tl-note" }, e.note),
-      e.next_action && h("div", { class: "tl-next" }, `下次：${e.next_action}${e.next_date ? `（${fmtDate(e.next_date)}）` : ""}`),
+      (e.next_action || e.next_date) && h("div", { class: "tl-next" + (e.next_done_at ? " done" : "") }, nextText(e)),
     ]),
   ]);
+}
+
+// 下次預計：事項＋日期，附上提醒狀態（已完成／延後）
+function nextText(e) {
+  const when = e.next_date && `（${fmtDate(e.next_date)}）`;
+  const state = e.next_done_at ? " · 已完成" : e.next_snoozed_to ? ` · 延後到 ${fmtDate(dueOf(e))}` : "";
+  return `下次：${e.next_action || "預計的作業"}${when || ""}${e.next_date ? state : ""}`;
 }
 
 function yearsSince(date) {
